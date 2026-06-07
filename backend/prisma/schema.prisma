@@ -1,0 +1,167 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           Int     @id @default(autoincrement())
+  email        String  @unique
+  password     String
+  fullName     String
+  phoneNumber  String?
+  profileImage String?
+  role         String  @default("buyer")
+  address      String?
+  city         String?
+  province     String?
+  postalCode   String?
+
+  productsListed  Product[]     @relation("SellerProducts")
+  cart            Cart?
+  orders          Order[]       @relation("BuyerOrders")
+  reviews         Review[]      @relation("ReviewAuthor")
+  receivedReviews Review[]      @relation("ReviewTarget")
+  transactions    Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  title       String
+  author      String?
+  isbn        String?
+  description String  @db.Text
+  condition   String  @default("good")
+  price       Decimal @db.Decimal(10, 2)
+  category    String
+
+  sellerId Int
+  seller   User @relation("SellerProducts", fields: [sellerId], references: [id])
+
+  images String[]
+
+  stock     Int     @default(1)
+  sold      Int     @default(0)
+  available Boolean @default(true)
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  reviews    Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([category])
+}
+
+model Cart {
+  id     Int @id @default(autoincrement())
+  userId Int @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id     Int @id @default(autoincrement())
+  cartId Int
+  cart   Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id      Int @id @default(autoincrement())
+  buyerId Int
+  buyer   User @relation("BuyerOrders", fields: [buyerId], references: [id])
+
+  items      OrderItem[]
+  totalPrice Decimal @db.Decimal(10, 2)
+
+  status        String @default("pending")
+  paymentStatus String @default("unpaid")
+
+  shippingAddress  String
+  shippingCity     String
+  shippingProvince String
+  trackingNumber   String?
+
+  transaction Transaction?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerId])
+}
+
+model OrderItem {
+  id      Int @id @default(autoincrement())
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity    Int
+  priceAtTime Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        Int @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  authorId Int
+  author   User @relation("ReviewAuthor", fields: [authorId], references: [id])
+
+  targetSellerId Int?
+  targetSeller   User? @relation("ReviewTarget", fields: [targetSellerId], references: [id])
+
+  rating  Int
+  comment String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, authorId])
+}
+
+model Transaction {
+  id      Int @id @default(autoincrement())
+  orderId Int @unique
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  amount        Decimal @db.Decimal(10, 2)
+  paymentMethod String
+  transactionId String?
+
+  status String @default("pending")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
