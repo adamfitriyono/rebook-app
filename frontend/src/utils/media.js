@@ -6,6 +6,14 @@ export function getApiBaseUrl() {
   return '';
 }
 
+/** Avatar default untuk semua user (pembeli, penjual, admin). */
+export const DEFAULT_AVATAR = '/images/user-pic-default.svg';
+
+/** Resolve URL avatar; jatuh ke gambar default jika kosong. */
+export function resolveAvatarUrl(path) {
+  return resolveMediaUrl(path, DEFAULT_AVATAR);
+}
+
 /** Ubah path /uploads/... menjadi URL penuh di production. */
 export function resolveMediaUrl(path, fallback = null) {
   if (!path) return fallback;

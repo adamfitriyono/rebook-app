@@ -77,7 +77,7 @@ exports.getProductById = async (req, res, next) => {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        seller: { select: { id: true, fullName: true, phoneNumber: true } },
+        seller: { select: { id: true, fullName: true, phoneNumber: true, profileImage: true } },
         reviews: {
           include: { author: { select: { fullName: true } } },
           orderBy: { createdAt: 'desc' },

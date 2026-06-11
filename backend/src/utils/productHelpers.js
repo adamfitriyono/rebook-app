@@ -36,6 +36,7 @@ function formatProduct(product, sellerRating = 0) {
       ? {
           id: product.seller.id,
           fullName: product.seller.fullName,
+          profileImage: product.seller.profileImage || null,
           rating: sellerRating,
         }
       : undefined,

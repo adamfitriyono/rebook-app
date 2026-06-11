@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import Loading from '../components/common/Loading';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { getMyListings, deleteProduct } from '../services/products';
@@ -54,7 +54,7 @@ export default function MyListings() {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-heading">Listing Saya</h1>
-        <Link to="/sell" className="bg-primary text-white px-4 py-2 rounded-lg text-sm">+ Jual Buku</Link>
+        <Link to="/sell" className="btn-primary btn-sm">+ Jual Buku</Link>
       </div>
       {products.length === 0 ? (
         <p className="text-subtle">Belum ada listing. <Link to="/sell" className="text-primary">Jual buku pertama</Link></p>
@@ -74,19 +74,19 @@ export default function MyListings() {
                   {CONDITION_LABELS[product.condition]} | Stok: {product.stock} | Terjual: {product.sold}
                 </p>
               </div>
-              <div className="flex flex-col gap-2 self-start">
+              <div className="flex flex-col gap-2 self-center">
                 <Link
                   to={`/edit-listing/${product.id}`}
-                  className="flex items-center gap-1 text-primary text-sm hover:underline"
+                  className="btn-outline btn-sm"
                 >
                   <Pencil size={14} /> Edit
                 </Link>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(product.id)}
-                  className="text-red-500 text-sm text-left"
+                  className="btn-danger btn-sm"
                 >
-                  Hapus
+                  <Trash2 size={14} /> Hapus
                 </button>
               </div>
             </div>

@@ -4,27 +4,16 @@ import { ShoppingCart, Menu, X, Search, ShoppingBag, Moon, Sun } from 'lucide-re
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useAuthStore';
 import { useThemeStore } from '../../store/useThemeStore';
-import { resolveMediaUrl } from '../../utils/media';
-
-function getInitials(name) {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { resolveAvatarUrl } from '../../utils/media';
 
 function UserAvatar({ user, size = 28 }) {
-  const avatarUrl = resolveMediaUrl(user?.profileImage);
-  if (avatarUrl) {
-    return <img src={avatarUrl} alt={user.fullName} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />;
-  }
   return (
-    <span className="rounded-full bg-primary/20 text-primary font-semibold flex items-center justify-center shrink-0" style={{ width: size, height: size, fontSize: size * 0.35 }}>
-      {getInitials(user?.fullName)}
-    </span>
+    <img
+      src={resolveAvatarUrl(user?.profileImage)}
+      alt={user?.fullName || 'User'}
+      className="rounded-full object-cover shrink-0 bg-gray-100 dark:bg-gray-700"
+      style={{ width: size, height: size }}
+    />
   );
 }
 

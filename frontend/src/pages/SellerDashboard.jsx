@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck } from 'lucide-react';
+import { Truck, Package, PackageCheck, ShoppingBag, ExternalLink } from 'lucide-react';
 import Loading from '../components/common/Loading';
 import ConfirmModal from '../components/common/ConfirmModal';
+import EmptyState from '../components/common/EmptyState';
+import StatusBadge from '../components/common/StatusBadge';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import { getDashboardStats } from '../services/users';
 import { getSellerOrders, updateOrderStatus } from '../services/orders';
 import { toast } from '../store/useToastStore';
-import { ORDER_STATUS_LABELS } from '../utils/constants';
 import { formatDate } from '../utils/formatters';
+import { resolveMediaUrl } from '../utils/media';
 import { getOrderProductTitle, canMarkShipped } from '../utils/orderHelpers';
+
+const STAT_CARDS = [
+  { key: 'totalListings', label: 'Total Listing', icon: Package },
+  { key: 'activeListings', label: 'Listing Aktif', icon: PackageCheck },
+  { key: 'totalSold', label: 'Total Terjual', icon: ShoppingBag },
+];
 
 export default function SellerDashboard() {
   const [stats, setStats] = useState(null);
@@ -100,84 +108,104 @@ export default function SellerDashboard() {
       <h1 className="text-2xl font-bold text-heading mb-6">Dashboard Penjual</h1>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        <div className="surface-card p-4">
-          <p className="text-sm text-subtle">Total Listing</p>
-          <p className="text-2xl font-bold text-primary">{stats?.sellerStats?.totalListings || 0}</p>
-        </div>
-        <div className="surface-card p-4">
-          <p className="text-sm text-subtle">Listing Aktif</p>
-          <p className="text-2xl font-bold text-primary">{stats?.sellerStats?.activeListings || 0}</p>
-        </div>
-        <div className="surface-card p-4">
-          <p className="text-sm text-subtle">Total Terjual</p>
-          <p className="text-2xl font-bold text-primary">{stats?.sellerStats?.totalSold || 0}</p>
-        </div>
+        {STAT_CARDS.map(({ key, label, icon: Icon }) => (
+          <div key={key} className="surface-card p-5 rounded-2xl flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Icon size={24} className="text-primary" />
+            </div>
+            <div>
+              <p className="text-sm text-subtle">{label}</p>
+              <p className="text-2xl font-bold text-heading">{stats?.sellerStats?.[key] || 0}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex gap-4 mb-6">
-        <Link to="/sell" className="bg-primary text-white px-4 py-2 rounded-lg text-sm">+ Jual Buku</Link>
-        <Link to="/my-listings" className="border border-primary text-primary px-4 py-2 rounded-lg text-sm">Kelola Listing</Link>
+      <div className="flex flex-wrap gap-3 mb-8">
+        <Link to="/sell" className="btn-primary">
+          + Jual Buku
+        </Link>
+        <Link to="/my-listings" className="btn-outline">
+          Kelola Listing
+        </Link>
       </div>
 
-      <h2 className="text-lg font-bold mb-4">Pesanan Masuk</h2>
+      <h2 className="text-lg font-bold text-heading mb-4">Pesanan Masuk</h2>
       {uniqueOrders.length === 0 ? (
-        <p className="text-subtle">Belum ada pesanan.</p>
+        <EmptyState
+          icon={Package}
+          title="Belum Ada Pesanan"
+          description="Pesanan dari pembeli akan muncul di sini."
+          cta="Kelola Listing"
+          to="/my-listings"
+        />
       ) : (
         <div className="space-y-4">
-          {uniqueOrders.map((order) => (
-            <div key={order.orderId} className="surface-card p-4">
-              <div className="flex flex-wrap justify-between items-start gap-3 mb-3">
-                <div>
-                  <p className="font-medium">{getOrderProductTitle({ items: order.items })}</p>
-                  <p className="text-sm text-subtle">
-                    {order.buyer.fullName} &middot; {formatDate(order.createdAt)}
-                  </p>
+          {uniqueOrders.map((order) => {
+            const firstProduct = order.items[0]?.product;
+            const thumb = firstProduct?.images?.[0];
+            return (
+              <div key={order.orderId} className="surface-card p-4 rounded-2xl">
+                <div className="flex gap-4">
+                  <img
+                    src={resolveMediaUrl(thumb, 'https://picsum.photos/80/100')}
+                    alt=""
+                    className="w-16 h-20 object-cover rounded-lg shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-heading truncate">
+                          {getOrderProductTitle({ items: order.items })}
+                        </p>
+                        <p className="text-sm text-subtle mt-0.5">
+                          {order.buyer.fullName} &middot; {formatDate(order.createdAt)}
+                        </p>
+                      </div>
+                      <StatusBadge status={order.status} />
+                    </div>
+
+                    <OrderStatusTracker status={order.status} compact />
+
+                    <div className="mt-3 space-y-1">
+                      {order.items.map((item) => (
+                        <p key={item.id} className="text-sm text-muted">
+                          {item.product.title} &times; {item.quantity}
+                        </p>
+                      ))}
+                    </div>
+
+                    {order.trackingNumber && (
+                      <p className="text-sm text-primary mt-2">
+                        Resi: <span className="font-medium">{order.trackingNumber}</span>
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Link to={`/orders/${order.orderId}`} className="btn-outline btn-sm">
+                        <ExternalLink size={14} />
+                        Detail
+                      </Link>
+                      {canMarkShipped(order) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShipTarget(order.orderId);
+                            setTrackingNumber('');
+                          }}
+                          disabled={updatingId === order.orderId}
+                          className="btn-primary btn-sm"
+                        >
+                          <Truck size={14} />
+                          {updatingId === order.orderId ? 'Memproses...' : 'Tandai Dikirim'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded">
-                  {ORDER_STATUS_LABELS[order.status] || order.status}
-                </span>
               </div>
-
-              <OrderStatusTracker status={order.status} compact />
-
-              <ul className="text-sm text-muted space-y-1 my-3">
-                {order.items.map((item) => (
-                  <li key={item.id}>
-                    {item.product.title} &times; {item.quantity}
-                  </li>
-                ))}
-              </ul>
-
-              {order.trackingNumber && (
-                <p className="text-sm text-primary mt-2">
-                  Resi: <span className="font-medium">{order.trackingNumber}</span>
-                </p>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  to={`/orders/${order.orderId}`}
-                  className="text-sm text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary/5"
-                >
-                  Detail
-                </Link>
-                {canMarkShipped(order) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShipTarget(order.orderId);
-                      setTrackingNumber('');
-                    }}
-                    disabled={updatingId === order.orderId}
-                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    <Truck size={16} />
-                    {updatingId === order.orderId ? 'Memproses...' : 'Tandai Dikirim'}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

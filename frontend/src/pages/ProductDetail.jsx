@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Star, CreditCard } from 'lucide-react';
+import { Plus, Star } from 'lucide-react';
 import Loading from '../components/common/Loading';
 import RatingStars from '../components/product/RatingStars';
 import { getProductById } from '../services/products';
@@ -9,8 +9,10 @@ import { createReview } from '../services/reviews';
 import { useAuthStore, useCartStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
 import { formatPrice, formatDate } from '../utils/formatters';
-import { resolveMediaUrl } from '../utils/media';
+import { resolveMediaUrl, resolveAvatarUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
+
+const DESCRIPTION_LIMIT = 180;
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -24,6 +26,7 @@ export default function ProductDetail() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   const loadProduct = () => {
     getProductById(id)
@@ -106,44 +109,89 @@ export default function ProductDetail() {
   if (loading) return <Loading />;
   if (!product) return <div className="text-center py-16">Produk tidak ditemukan</div>;
 
+  const description = product.description || '';
+  const isLongDescription = description.length > DESCRIPTION_LIMIT;
+  const visibleDescription =
+    !isLongDescription || showFullDescription
+      ? description
+      : `${description.slice(0, DESCRIPTION_LIMIT).trimEnd()}...`;
+
   return (
     <div className="max-w-content mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8 surface-card p-6">
-        <img
-          src={resolveMediaUrl(product.images?.[0], 'https://picsum.photos/400/500')}
-          alt={product.title}
-          className="w-full rounded-lg object-cover max-h-[500px]"
-        />
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold text-heading">{product.title}</h1>
-          {product.author && <p className="text-muted">Penulis: {product.author}</p>}
-          <RatingStars rating={product.rating} count={product.reviewCount} />
-          <p className="text-3xl font-bold text-primary">{formatPrice(product.price)}</p>
-          <span className="inline-block bg-secondary/10 text-secondary px-3 py-1 rounded text-sm">
-            {CONDITION_LABELS[product.condition]}
-          </span>
-          <p className="text-muted">{product.description}</p>
-          <div className="text-sm text-subtle">
-            <p>Penjual: {product.seller?.fullName}</p>
-            <p>Stok: {product.stock} | Terjual: {product.sold}</p>
+        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center overflow-hidden">
+          <img
+            src={resolveMediaUrl(product.images?.[0], 'https://picsum.photos/400/500')}
+            alt={product.title}
+            className="w-full h-full max-h-[520px] object-cover rounded-xl"
+          />
+        </div>
+
+        <div className="flex flex-col gap-4 min-w-0">
+          <div>
+            <h1 className="text-3xl font-bold text-heading break-words">{product.title}</h1>
+            {product.author && <p className="text-muted mt-1">Penulis: {product.author}</p>}
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
+
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-subtle">
+              Terjual <span className="font-medium text-muted">{product.sold}</span>
+            </span>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <RatingStars rating={product.rating} count={product.reviewCount} />
+          </div>
+
+          <p className="text-4xl font-bold text-heading">{formatPrice(product.price)}</p>
+
+          <div>
+            <p className="text-sm font-semibold text-heading mb-2">Kualitas kurasi:</p>
+            <span className="inline-block border border-amber-400 text-amber-500 bg-amber-50 dark:bg-amber-400/10 px-4 py-1.5 rounded-lg text-sm font-medium">
+              {CONDITION_LABELS[product.condition]}
+            </span>
+          </div>
+
+          <div>
+            <h2 className="inline-block text-primary font-semibold border-b-2 border-primary pb-0.5 mb-2">
+              Detail Produk
+            </h2>
+            <p className="text-sm text-muted leading-relaxed break-words whitespace-pre-line">{visibleDescription}</p>
+            {isLongDescription && (
+              <button
+                type="button"
+                onClick={() => setShowFullDescription((v) => !v)}
+                className="text-primary text-xs mt-1 hover:underline"
+              >
+                {showFullDescription ? 'Sembunyikan' : 'Lihat selengkapnya'}
+              </button>
+            )}
+            <p className="text-xs text-subtle mt-2">Stok: {product.stock}</p>
+          </div>
+
+          <div className="flex items-center gap-3 mt-1">
+            <img
+              src={resolveAvatarUrl(product.seller?.profileImage)}
+              alt={product.seller?.fullName || 'Penjual'}
+              className="w-10 h-10 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
+            />
+            <p className="font-semibold text-heading">{product.seller?.fullName}</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-2">
             <button
               type="button"
               onClick={handleBuyNow}
               disabled={actionDisabled}
-              className="flex-1 bg-primary text-white py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50"
+              className="flex-1 bg-primary text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50"
             >
-              <CreditCard size={20} />
-              {buying ? 'Memproses...' : outOfStock ? 'Stok Habis' : 'Bayar Sekarang'}
+              {buying ? 'Memproses...' : outOfStock ? 'Stok Habis' : 'Beli Langsung'}
             </button>
             <button
               type="button"
               onClick={handleAddToCart}
               disabled={actionDisabled}
-              className="flex-1 border-2 border-primary text-primary py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 disabled:opacity-50"
+              className="flex-1 border-2 border-primary text-primary py-3 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-primary/5 disabled:opacity-50"
             >
-              <ShoppingCart size={20} />
+              <Plus size={18} />
               {adding ? 'Menambahkan...' : 'Tambah ke Keranjang'}
             </button>
           </div>

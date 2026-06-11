@@ -4,17 +4,7 @@ import { Camera } from 'lucide-react';
 import { updateProfile } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
-import { resolveMediaUrl } from '../utils/media';
-
-function getInitials(name) {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { resolveMediaUrl, resolveAvatarUrl } from '../utils/media';
 
 export default function Profile() {
   const { user, setUser } = useAuthStore();
@@ -79,7 +69,7 @@ export default function Profile() {
   };
 
   const displayAvatar =
-    avatarPreview?.startsWith('blob:') ? avatarPreview : resolveMediaUrl(avatarPreview || user?.profileImage);
+    avatarPreview?.startsWith('blob:') ? avatarPreview : resolveAvatarUrl(avatarPreview || user?.profileImage);
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
@@ -89,13 +79,9 @@ export default function Profile() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="relative w-24 h-24 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center group"
+            className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center group"
           >
-            {displayAvatar ? (
-              <img src={displayAvatar} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-2xl font-bold text-primary">{getInitials(user?.fullName)}</span>
-            )}
+            <img src={displayAvatar} alt="Avatar" className="w-full h-full object-cover" />
             <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
               <Camera size={24} className="text-white" />
             </span>
