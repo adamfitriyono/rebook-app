@@ -1,6 +1,18 @@
-import { CATEGORIES } from '../../utils/constants';
+import useCategories from '../../hooks/useCategories';
 
 export default function CategoryFilter({ selected, onSelect }) {
+  const { categories, loading } = useCategories();
+
+  if (loading) {
+    return (
+      <div className="flex flex-wrap gap-2 mb-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-9 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-2 mb-6">
       <button
@@ -12,7 +24,7 @@ export default function CategoryFilter({ selected, onSelect }) {
       >
         Semua
       </button>
-      {CATEGORIES.map((cat) => (
+      {categories.map((cat) => (
         <button
           key={cat}
           type="button"

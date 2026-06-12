@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { createProduct } from '../services/products';
 import { toast } from '../store/useToastStore';
-import { CATEGORIES, CONDITION_LABELS } from '../utils/constants';
+import { CONDITION_LABELS } from '../utils/constants';
+import useCategories from '../hooks/useCategories';
 import ImageFilePicker from '../components/product/ImageFilePicker';
 
 export default function SellBook() {
   const navigate = useNavigate();
+  const { categories, loading: categoriesLoading } = useCategories();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -58,8 +60,9 @@ export default function SellBook() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Kategori</label>
-            <select {...register('category', { required: true })} className="input-field">
-              {CATEGORIES.map((cat) => (
+            <select {...register('category', { required: true })} className="input-field" disabled={categoriesLoading}>
+              {categories.length === 0 && <option value="">Memuat...</option>}
+              {categories.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>

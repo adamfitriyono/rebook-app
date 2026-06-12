@@ -8,3 +8,6 @@ export const patchProductAvailability = (id, available) =>
   API.patch(`/admin/products/${id}/availability`, { available });
 export const deleteAdminProduct = (id) => API.delete(`/admin/products/${id}`);
 export const getAdminOrders = (params) => API.get('/admin/orders', { params });
+export const getAdminCategories = () => API.get('/admin/categories');
+export const createAdminCategory = (name) => API.post('/admin/categories', { name });
+export const deleteAdminCategory = (id) => API.delete(`/admin/categories/${id}`);

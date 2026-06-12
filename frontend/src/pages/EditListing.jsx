@@ -5,7 +5,8 @@ import Loading from '../components/common/Loading';
 import { getProductById, updateProduct } from '../services/products';
 import { useAuthStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
-import { CATEGORIES, CONDITION_LABELS } from '../utils/constants';
+import { CONDITION_LABELS } from '../utils/constants';
+import useCategories from '../hooks/useCategories';
 import ImageFilePicker from '../components/product/ImageFilePicker';
 import { resolveMediaUrl } from '../utils/media';
 
@@ -17,6 +18,7 @@ export default function EditListing() {
   const [saving, setSaving] = useState(false);
   const [images, setImages] = useState([]);
   const [currentImages, setCurrentImages] = useState([]);
+  const { categories, loading: categoriesLoading } = useCategories();
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   useEffect(() => {
@@ -102,8 +104,8 @@ export default function EditListing() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Kategori</label>
-            <select {...register('category', { required: true })} className="input-field">
-              {CATEGORIES.map((cat) => (
+            <select {...register('category', { required: true })} className="input-field" disabled={categoriesLoading}>
+              {categories.map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>

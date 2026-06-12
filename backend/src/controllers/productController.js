@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { computeSellerRating, formatProduct } = require('../utils/productHelpers');
+const { validateCategoryName } = require('./categoryController');
 
 exports.getProducts = async (req, res, next) => {
   try {
@@ -114,6 +115,11 @@ exports.createProduct = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Invalid input data' });
     }
 
+    const categoryValid = await validateCategoryName(category);
+    if (!categoryValid) {
+      return res.status(400).json({ success: false, error: 'Kategori tidak valid' });
+    }
+
     const images = req.files
       ? req.files.map((f) => `/uploads/${f.filename}`)
       : ['/uploads/placeholder.png'];
@@ -163,7 +169,13 @@ exports.updateProduct = async (req, res, next) => {
     if (description) updateData.description = description;
     if (condition) updateData.condition = condition;
     if (price) updateData.price = parseFloat(price);
-    if (category) updateData.category = category;
+    if (category) {
+      const categoryValid = await validateCategoryName(category);
+      if (!categoryValid) {
+        return res.status(400).json({ success: false, error: 'Kategori tidak valid' });
+      }
+      updateData.category = category;
+    }
     if (stock !== undefined) updateData.stock = parseInt(stock, 10);
     if (available !== undefined) updateData.available = available === 'true' || available === true;
 
@@ -242,18 +254,6 @@ exports.getMyListings = async (req, res, next) => {
 };
 
 exports.getCategories = async (req, res, next) => {
-  try {
-    const categories = await prisma.product.findMany({
-      where: { available: true },
-      select: { category: true },
-      distinct: ['category'],
-    });
-
-    res.json({
-      success: true,
-      data: categories.map((c) => c.category),
-    });
-  } catch (err) {
-    next(err);
-  }
+  const { getPublicCategories } = require('./categoryController');
+  return getPublicCategories(req, res, next);
 };

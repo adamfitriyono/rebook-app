@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Loading from '../components/common/Loading';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { Trash2, Plus } from 'lucide-react';
 import {
   getAdminStats,
   getAdminUsers,
   getAdminProducts,
   getAdminOrders,
+  getAdminCategories,
+  createAdminCategory,
+  deleteAdminCategory,
   patchUserRole,
   patchProductAvailability,
   deleteAdminProduct,
@@ -20,6 +24,7 @@ const TABS = [
   { key: 'users', label: 'Users' },
   { key: 'products', label: 'Products' },
   { key: 'orders', label: 'Orders' },
+  { key: 'categories', label: 'Kategori' },
 ];
 
 export default function AdminDashboard() {
@@ -32,6 +37,10 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState('all');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [categorySaving, setCategorySaving] = useState(false);
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState(null);
 
   const loadOverview = () =>
     getAdminStats().then(({ data }) => setStats(data.data));
@@ -45,12 +54,16 @@ export default function AdminDashboard() {
   const loadOrders = () =>
     getAdminOrders({ status: orderStatusFilter }).then(({ data }) => setOrders(data.data));
 
+  const loadCategories = () =>
+    getAdminCategories().then(({ data }) => setCategories(data.data));
+
   const refresh = () => {
     setLoading(true);
     const tasks = [loadOverview()];
     if (tab === 'users') tasks.push(loadUsers());
     if (tab === 'products') tasks.push(loadProducts());
     if (tab === 'orders') tasks.push(loadOrders());
+    if (tab === 'categories') tasks.push(loadCategories());
     Promise.all(tasks)
       .catch((err) => toast.error(err.response?.data?.error || 'Gagal memuat data'))
       .finally(() => setLoading(false));
@@ -80,6 +93,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    const name = newCategoryName.trim();
+    if (!name) return;
+    try {
+      setCategorySaving(true);
+      await createAdminCategory(name);
+      toast.success('Kategori ditambahkan');
+      setNewCategoryName('');
+      loadCategories();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal menambah kategori');
+    } finally {
+      setCategorySaving(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryTarget) return;
+    try {
+      await deleteAdminCategory(deleteCategoryTarget);
+      toast.success('Kategori dihapus');
+      setDeleteCategoryTarget(null);
+      loadCategories();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal menghapus kategori');
+    }
+  };
+
   const handleDeleteProduct = async () => {
     if (!deleteTarget) return;
     try {
@@ -105,6 +147,15 @@ export default function AdminDashboard() {
         danger
         onConfirm={handleDeleteProduct}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmModal
+        open={!!deleteCategoryTarget}
+        title="Hapus Kategori"
+        message="Kategori akan dihapus. Pastikan tidak ada produk yang memakai kategori ini."
+        confirmLabel="Hapus"
+        danger
+        onConfirm={handleDeleteCategory}
+        onCancel={() => setDeleteCategoryTarget(null)}
       />
 
       <h1 className="text-2xl font-bold text-heading mb-6">Admin Panel</h1>
@@ -230,6 +281,60 @@ export default function AdminDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === 'categories' && (
+        <div className="space-y-6">
+          <form onSubmit={handleAddCategory} className="surface-card p-4 flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium mb-1">Nama Kategori Baru</label>
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Contoh: Sains, Sejarah, dll."
+                className="input-field"
+              />
+            </div>
+            <button type="submit" disabled={categorySaving} className="btn-primary">
+              <Plus size={16} />
+              {categorySaving ? 'Menyimpan...' : 'Tambah Kategori'}
+            </button>
+          </form>
+
+          <div className="surface-card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700 text-left text-muted">
+                  <th className="p-3">Nama</th>
+                  <th className="p-3">Dibuat</th>
+                  <th className="p-3 w-24">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((cat) => (
+                  <tr key={cat.id} className="border-b border-gray-100 dark:border-gray-800">
+                    <td className="p-3 font-medium">{cat.name}</td>
+                    <td className="p-3 text-subtle">{formatDate(cat.createdAt)}</td>
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteCategoryTarget(cat.id)}
+                        className="btn-danger btn-sm"
+                        aria-label={`Hapus ${cat.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {categories.length === 0 && (
+              <p className="p-4 text-subtle text-sm">Belum ada kategori.</p>
+            )}
+          </div>
         </div>
       )}
 

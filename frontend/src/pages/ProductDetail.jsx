@@ -9,7 +9,8 @@ import { createReview } from '../services/reviews';
 import { useAuthStore, useCartStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
 import { formatPrice, formatDate } from '../utils/formatters';
-import { resolveMediaUrl, resolveAvatarUrl } from '../utils/media';
+import ProductImageGallery from '../components/product/ProductImageGallery';
+import { resolveAvatarUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
 
 const DESCRIPTION_LIMIT = 180;
@@ -118,14 +119,8 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <div className="grid md:grid-cols-2 gap-8 surface-card p-6">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center overflow-hidden">
-          <img
-            src={resolveMediaUrl(product.images?.[0], 'https://picsum.photos/400/500')}
-            alt={product.title}
-            className="w-full h-full max-h-[520px] object-cover rounded-xl"
-          />
-        </div>
+      <div className="grid md:grid-cols-2 gap-8 items-start surface-card p-6">
+        <ProductImageGallery images={product.images} alt={product.title} />
 
         <div className="flex flex-col gap-4 min-w-0">
           <div>

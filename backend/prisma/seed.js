@@ -32,6 +32,8 @@ const reviewComments = [
   'Packing rapi dengan bubble wrap, buku sampai mulus.',
 ];
 
+const DEFAULT_CATEGORIES = ['Teknologi', 'Fiksi', 'Pendidikan', 'Bisnis', 'Hobi'];
+
 const reviewAuthors = [
   { email: 'reviewer1@test.com', fullName: 'Andi Pratama' },
   { email: 'reviewer2@test.com', fullName: 'Siti Rahayu' },
@@ -51,6 +53,11 @@ async function main() {
   await prisma.cart.deleteMany();
   await prisma.product.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.category.deleteMany();
+
+  for (const name of DEFAULT_CATEGORIES) {
+    await prisma.category.create({ data: { name } });
+  }
 
   const buyer = await prisma.user.create({
     data: {

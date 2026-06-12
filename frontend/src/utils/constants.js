@@ -1,5 +1,3 @@
-export const CATEGORIES = ['Teknologi', 'Fiksi', 'Pendidikan', 'Bisnis', 'Hobi'];
-
 export const CONDITION_LABELS = {
   like_new: 'Seperti Baru',
   good: 'Bagus',
