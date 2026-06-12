@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-const { computeSellerRating, formatProduct } = require('../utils/productHelpers');
+const { computeSellerRating, formatProduct, parseDiscountPercent } = require('../utils/productHelpers');
 const { validateCategoryName } = require('./categoryController');
 
 exports.getProducts = async (req, res, next) => {
@@ -78,7 +78,7 @@ exports.getProductById = async (req, res, next) => {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        seller: { select: { id: true, fullName: true, phoneNumber: true, profileImage: true } },
+        seller: { select: { id: true, fullName: true, phoneNumber: true, profileImage: true, city: true } },
         reviews: {
           include: { author: { select: { fullName: true } } },
           orderBy: { createdAt: 'desc' },
@@ -109,7 +109,7 @@ exports.getProductById = async (req, res, next) => {
 
 exports.createProduct = async (req, res, next) => {
   try {
-    const { title, author, isbn, description, condition, price, category, stock } = req.body;
+    const { title, author, isbn, description, condition, price, category, stock, discountPercent } = req.body;
 
     if (!title || !description || !condition || !price || !category) {
       return res.status(400).json({ success: false, error: 'Invalid input data' });
@@ -118,6 +118,11 @@ exports.createProduct = async (req, res, next) => {
     const categoryValid = await validateCategoryName(category);
     if (!categoryValid) {
       return res.status(400).json({ success: false, error: 'Kategori tidak valid' });
+    }
+
+    const parsedDiscount = parseDiscountPercent(discountPercent);
+    if (parsedDiscount === undefined) {
+      return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
     }
 
     const images = req.files
@@ -134,6 +139,7 @@ exports.createProduct = async (req, res, next) => {
         price: parseFloat(price),
         category,
         stock: parseInt(stock, 10) || 1,
+        discountPercent: parsedDiscount,
         sellerId: req.user.id,
         images,
       },
@@ -161,7 +167,7 @@ exports.updateProduct = async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'You can only update your own products' });
     }
 
-    const { title, author, isbn, description, condition, price, category, stock, available } = req.body;
+    const { title, author, isbn, description, condition, price, category, stock, available, discountPercent } = req.body;
     const updateData = {};
     if (title) updateData.title = title;
     if (author !== undefined) updateData.author = author;
@@ -178,6 +184,13 @@ exports.updateProduct = async (req, res, next) => {
     }
     if (stock !== undefined) updateData.stock = parseInt(stock, 10);
     if (available !== undefined) updateData.available = available === 'true' || available === true;
+    if (discountPercent !== undefined) {
+      const parsedDiscount = parseDiscountPercent(discountPercent);
+      if (parsedDiscount === undefined) {
+        return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
+      }
+      updateData.discountPercent = parsedDiscount;
+    }
 
     if (req.files && req.files.length > 0) {
       updateData.images = req.files.map((f) => `/uploads/${f.filename}`);

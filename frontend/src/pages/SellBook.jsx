@@ -78,6 +78,18 @@ export default function SellBook() {
             <input type="number" {...register('stock', { required: true, min: 1 })} defaultValue={1} className="input-field" />
           </div>
         </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Diskon / Hemat (%)</label>
+          <input
+            type="number"
+            min={0}
+            max={99}
+            {...register('discountPercent', { min: 0, max: 99 })}
+            placeholder="Opsional"
+            className="input-field"
+          />
+          <p className="text-xs text-subtle mt-1">Kosongkan jika tidak ada diskon (0–99)</p>
+        </div>
         <ImageFilePicker files={images} onChange={setImages} />
         <button
           type="submit"

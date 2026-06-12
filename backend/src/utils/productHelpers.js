@@ -37,14 +37,23 @@ function formatProduct(product, sellerRating = 0) {
           id: product.seller.id,
           fullName: product.seller.fullName,
           profileImage: product.seller.profileImage || null,
+          city: product.seller.city || null,
           rating: sellerRating,
         }
       : undefined,
     stock: product.stock,
     sold: product.sold,
     available: product.available,
+    discountPercent: product.discountPercent || null,
     createdAt: product.createdAt,
   };
 }
 
-module.exports = { computeProductRating, computeSellerRating, formatProduct };
+function parseDiscountPercent(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n) || n < 0 || n > 99) return undefined;
+  return n === 0 ? null : n;
+}
+
+module.exports = { computeProductRating, computeSellerRating, formatProduct, parseDiscountPercent };

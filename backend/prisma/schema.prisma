@@ -20,12 +20,15 @@ model User {
   province     String?
   postalCode   String?
 
-  productsListed  Product[]     @relation("SellerProducts")
-  cart            Cart?
-  orders          Order[]       @relation("BuyerOrders")
-  reviews         Review[]      @relation("ReviewAuthor")
-  receivedReviews Review[]      @relation("ReviewTarget")
-  transactions    Transaction[]
+  productsListed       Product[]        @relation("SellerProducts")
+  cart                 Cart?
+  orders               Order[]          @relation("BuyerOrders")
+  reviews              Review[]         @relation("ReviewAuthor")
+  receivedReviews      Review[]         @relation("ReviewTarget")
+  transactions         Transaction[]
+  buyerConversations   Conversation[]   @relation("BuyerConversations")
+  sellerConversations  Conversation[]   @relation("SellerConversations")
+  sentMessages         Message[]        @relation("SentMessages")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -44,8 +47,9 @@ model Product {
   isbn        String?
   description String  @db.Text
   condition   String  @default("good")
-  price       Decimal @db.Decimal(10, 2)
-  category    String
+  price           Decimal @db.Decimal(10, 2)
+  category        String
+  discountPercent Int?
 
   sellerId Int
   seller   User @relation("SellerProducts", fields: [sellerId], references: [id])
@@ -56,9 +60,10 @@ model Product {
   sold      Int     @default(0)
   available Boolean @default(true)
 
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-  reviews    Review[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  reviews        Review[]
+  conversations  Conversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -170,4 +175,34 @@ model Transaction {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  buyerId   Int
+  sellerId  Int
+  productId Int?
+  buyer     User      @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller    User      @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  messages  Message[]
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  @@unique([buyerId, sellerId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int
+  senderId       Int
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content        String       @db.Text
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
 }

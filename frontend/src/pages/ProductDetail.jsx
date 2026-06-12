@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Star } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Plus, Star, MessageCircle, Store } from 'lucide-react';
 import Loading from '../components/common/Loading';
 import RatingStars from '../components/product/RatingStars';
 import { getProductById } from '../services/products';
 import { addToCart, clearCart } from '../services/cart';
 import { createReview } from '../services/reviews';
+import { createConversation } from '../services/chat';
 import { useAuthStore, useCartStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
 import { formatPrice, formatDate } from '../utils/formatters';
@@ -28,6 +29,7 @@ export default function ProductDetail() {
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   const loadProduct = () => {
     getProductById(id)
@@ -106,6 +108,30 @@ export default function ProductDetail() {
 
   const canReview = user && user.id !== product?.seller?.id;
   const hasReviewed = product?.reviews?.some((r) => r.author === user?.fullName);
+  const isOwnProduct = user?.id === product?.seller?.id;
+
+  const handleStartChat = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (isOwnProduct) {
+      toast.error('Tidak bisa chat dengan diri sendiri');
+      return;
+    }
+    try {
+      setStartingChat(true);
+      const { data } = await createConversation({
+        sellerId: product.seller.id,
+        productId: product.id,
+      });
+      navigate(`/messages/${data.data.id}`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal memulai chat');
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   if (loading) return <Loading />;
   if (!product) return <div className="text-center py-16">Produk tidak ditemukan</div>;
@@ -120,7 +146,11 @@ export default function ProductDetail() {
   return (
     <div className="max-w-content mx-auto px-4 py-8">
       <div className="grid md:grid-cols-2 gap-8 items-start surface-card p-6">
-        <ProductImageGallery images={product.images} alt={product.title} />
+        <ProductImageGallery
+          images={product.images}
+          alt={product.title}
+          discountPercent={product.discountPercent}
+        />
 
         <div className="flex flex-col gap-4 min-w-0">
           <div>
@@ -162,13 +192,27 @@ export default function ProductDetail() {
             <p className="text-xs text-subtle mt-2">Stok: {product.stock}</p>
           </div>
 
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             <img
               src={resolveAvatarUrl(product.seller?.profileImage)}
               alt={product.seller?.fullName || 'Penjual'}
               className="w-10 h-10 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
             />
-            <p className="font-semibold text-heading">{product.seller?.fullName}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-heading">{product.seller?.fullName}</p>
+              {product.seller?.city && (
+                <p className="text-xs text-subtle">{product.seller.city}</p>
+              )}
+            </div>
+            {product.seller?.id && (
+              <Link
+                to={`/toko/${product.seller.id}`}
+                className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary/5"
+              >
+                <Store size={16} />
+                Kunjungi
+              </Link>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-2">
@@ -189,6 +233,18 @@ export default function ProductDetail() {
               <Plus size={18} />
               {adding ? 'Menambahkan...' : 'Tambah ke Keranjang'}
             </button>
+            {!isOwnProduct && (
+              <button
+                type="button"
+                onClick={handleStartChat}
+                disabled={startingChat}
+                className="sm:w-auto border-2 border-gray-300 dark:border-gray-600 text-heading py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+                aria-label="Chat penjual"
+              >
+                <MessageCircle size={20} />
+                {startingChat ? '...' : ''}
+              </button>
+            )}
           </div>
         </div>
       </div>

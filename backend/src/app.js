@@ -37,6 +37,8 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/support', require('./routes/support'));
+app.use('/api/chat', require('./routes/chat'));
+app.use('/api/sellers', require('./routes/sellers'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

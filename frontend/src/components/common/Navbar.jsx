@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Search, ShoppingBag, Moon, Sun } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, ShoppingBag, Moon, Sun, MessageCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useAuthStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { resolveAvatarUrl } from '../../utils/media';
+import { getUnreadCount } from '../../services/chat';
 
 function UserAvatar({ user, size = 28 }) {
   return (
@@ -25,6 +26,22 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return undefined;
+    }
+    const fetchUnread = () => {
+      getUnreadCount()
+        .then(({ data }) => setUnreadCount(data.data.count))
+        .catch(() => {});
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -59,6 +76,14 @@ export default function Navbar() {
           </Link>
           <Link to="/orders" onClick={closeMobile} className="btn-ghost">
             Pesanan
+          </Link>
+          <Link to="/messages" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
+            <MessageCircle size={18} /> Pesan
+            {unreadCount > 0 && (
+              <span className="bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </Link>
           {user.role === 'admin' && (
             <Link to="/admin" onClick={closeMobile} className="btn-ghost">
@@ -131,6 +156,17 @@ export default function Navbar() {
               {itemCount > 0 && <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{itemCount}</span>}
             </Link>
 
+            {user && (
+              <Link to="/messages" className="relative p-2 btn-ghost" aria-label="Pesan">
+                <MessageCircle size={22} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             {user ? (
               <div className="relative group">
                 <button type="button" className="p-2 btn-ghost flex items-center gap-2">
@@ -144,6 +180,14 @@ export default function Navbar() {
                     </Link>
                     <Link to="/orders" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
                       Pesanan
+                    </Link>
+                    <Link to="/messages" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm flex items-center justify-between">
+                      Pesan
+                      {unreadCount > 0 && (
+                        <span className="bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
                     </Link>
                     {user.role === 'admin' && (
                       <Link to="/admin" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">

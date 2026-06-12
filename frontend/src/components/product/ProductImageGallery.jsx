@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import { resolveMediaUrl } from '../../utils/media';
+import DiscountBadge from './DiscountBadge';
 
 const FALLBACK = 'https://picsum.photos/400/400';
 
-export default function ProductImageGallery({ images = [], alt = 'Produk' }) {
+export default function ProductImageGallery({ images = [], alt = 'Produk', discountPercent }) {
   const urls = (images?.length ? images : [null]).map((img) => resolveMediaUrl(img, FALLBACK));
   const [activeIndex, setActiveIndex] = useState(0);
   const safeIndex = Math.min(activeIndex, urls.length - 1);
 
   return (
     <div className="w-full self-start md:sticky md:top-24">
-      <div className="aspect-square w-full bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden">
+      <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden">
         <img
           src={urls[safeIndex]}
           alt={alt}
           className="w-full h-full object-cover"
         />
+        <DiscountBadge percent={discountPercent} />
       </div>
 
       {urls.length > 1 && (

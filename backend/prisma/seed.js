@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 const sampleBooks = [
   { title: 'Pemrograman JavaScript Modern', author: 'Kyle Simpson', category: 'Teknologi', price: 150000, condition: 'good' },
-  { title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', price: 200000, condition: 'like_new' },
-  { title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Fiksi', price: 45000, condition: 'good' },
+  { title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', price: 200000, condition: 'like_new', discountPercent: 60 },
+  { title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Fiksi', price: 45000, condition: 'good', discountPercent: 35 },
   { title: 'Bumi Manusia', author: 'Pramoedya Ananta Toer', category: 'Fiksi', price: 85000, condition: 'fair' },
   { title: 'Fisika Dasar Jilid 1', author: 'Halliday', category: 'Pendidikan', price: 120000, condition: 'good' },
   { title: 'Kimia Dasar', author: 'Petrucci', category: 'Pendidikan', price: 95000, condition: 'good' },
@@ -46,6 +46,8 @@ async function main() {
   const hashedPassword = await bcrypt.hash('Test123!', 10);
 
   await prisma.review.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.conversation.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -128,6 +130,7 @@ async function main() {
         condition: book.condition,
         price: book.price,
         category: book.category,
+        discountPercent: book.discountPercent || null,
         sellerId: sellerUser.id,
         images: [`https://picsum.photos/seed/rebook${i + 1}/400/500`],
         stock: Math.floor(Math.random() * 5) + 1,

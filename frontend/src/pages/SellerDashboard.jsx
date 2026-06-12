@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Package, PackageCheck, ShoppingBag, ExternalLink } from 'lucide-react';
+import { Truck, Package, PackageCheck, ShoppingBag, ExternalLink, MessageCircle } from 'lucide-react';
 import Loading from '../components/common/Loading';
 import ConfirmModal from '../components/common/ConfirmModal';
 import EmptyState from '../components/common/EmptyState';
@@ -127,6 +127,10 @@ export default function SellerDashboard() {
         </Link>
         <Link to="/my-listings" className="btn-outline">
           Kelola Listing
+        </Link>
+        <Link to="/messages" className="btn-outline flex items-center gap-2">
+          <MessageCircle size={18} />
+          Pesan
         </Link>
       </div>
 

@@ -20,6 +20,8 @@ import MyListings from './pages/MyListings';
 import SellBook from './pages/SellBook';
 import EditListing from './pages/EditListing';
 import SellerDashboard from './pages/SellerDashboard';
+import SellerStore from './pages/SellerStore';
+import Messages from './pages/Messages';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 import { useAuthStore, useCartStore } from './store/useAuthStore';
@@ -42,6 +44,9 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/toko/:sellerId" element={<SellerStore />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:conversationId" element={<Messages />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
