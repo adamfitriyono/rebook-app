@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
+const { uploadImage } = require('../utils/cloudinaryUpload');
 
 const generateToken = (userId) =>
   jwt.sign({ userId }, process.env.JWT_SECRET, {
@@ -105,7 +106,7 @@ exports.updateProfile = async (req, res, next) => {
     };
 
     if (req.file) {
-      data.profileImage = `/uploads/${req.file.filename}`;
+      data.profileImage = await uploadImage(req.file, 'profiles');
     }
 
     const user = await prisma.user.update({

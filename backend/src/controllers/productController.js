@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { computeSellerRating, formatProduct, parseDiscountPercent } = require('../utils/productHelpers');
 const { validateCategoryName } = require('./categoryController');
+const { uploadImages, DEFAULT_PRODUCT_IMAGE } = require('../utils/cloudinaryUpload');
 
 exports.getProducts = async (req, res, next) => {
   try {
@@ -125,9 +126,9 @@ exports.createProduct = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
     }
 
-    const images = req.files
-      ? req.files.map((f) => `/uploads/${f.filename}`)
-      : ['/uploads/placeholder.png'];
+    const images = req.files?.length
+      ? await uploadImages(req.files, 'products')
+      : [DEFAULT_PRODUCT_IMAGE];
 
     const product = await prisma.product.create({
       data: {
@@ -192,8 +193,8 @@ exports.updateProduct = async (req, res, next) => {
       updateData.discountPercent = parsedDiscount;
     }
 
-    if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map((f) => `/uploads/${f.filename}`);
+    if (req.files?.length > 0) {
+      updateData.images = await uploadImages(req.files, 'products');
     }
 
     const updated = await prisma.product.update({ where: { id }, data: updateData });
