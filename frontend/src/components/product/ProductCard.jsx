@@ -2,11 +2,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { formatPrice } from '../../utils/formatters';
 import { resolveMediaUrl } from '../../utils/media';
+import { isProductSoldOut } from '../../utils/productStatus';
 import DiscountBadge from './DiscountBadge';
+import SoldBadge from './SoldBadge';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
-  const imageUrl = resolveMediaUrl(product.images?.[0], 'https://picsum.photos/400/500');
+  const imageUrl = resolveMediaUrl(product.images?.[0], 'https://picsum.photos/400/533');
+  const soldOut = isProductSoldOut(product);
 
   const handleSellerClick = (e) => {
     e.preventDefault();
@@ -16,13 +19,14 @@ export default function ProductCard({ product }) {
 
   return (
     <Link to={`/product/${product.id}`} className="surface-card overflow-hidden hover:shadow-md dark:hover:shadow-gray-900/50 transition group block">
-      <div className="relative aspect-square bg-gray-100 dark:bg-gray-800 overflow-hidden">
+      <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800 overflow-hidden">
         <img
           src={imageUrl}
           alt={product.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          className={`w-full h-full object-cover transition duration-300 ${soldOut ? 'opacity-80' : 'group-hover:scale-105'}`}
         />
         <DiscountBadge percent={product.discountPercent} />
+        {soldOut && <SoldBadge />}
       </div>
       <div className="p-3 space-y-1">
         <h3 className="font-medium text-sm text-heading line-clamp-2 min-h-[2.5rem]">{product.title}</h3>

@@ -150,6 +150,7 @@ export default function ProductDetail() {
           images={product.images}
           alt={product.title}
           discountPercent={product.discountPercent}
+          soldOut={product.stock <= 0}
         />
 
         <div className="flex flex-col gap-4 min-w-0">
