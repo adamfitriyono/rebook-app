@@ -11,6 +11,7 @@ import { useAuthStore, useCartStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
 import { formatPrice, formatDate } from '../utils/formatters';
 import ProductImageGallery from '../components/product/ProductImageGallery';
+import BuyerProtectionBadge from '../components/product/BuyerProtectionBadge';
 import { resolveAvatarUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
 
@@ -193,7 +194,9 @@ export default function ProductDetail() {
             <p className="text-xs text-subtle mt-2">Stok: {product.stock}</p>
           </div>
 
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
+          <BuyerProtectionBadge />
+
+          <div className="flex items-center gap-3 flex-wrap">
             <img
               src={resolveAvatarUrl(product.seller?.profileImage)}
               alt={product.seller?.fullName || 'Penjual'}
