@@ -1,43 +1,115 @@
 # ReBook
+Marketplace buku bekas terkurasi — beli atau jual buku bekasmu dalam satu platform.
 
-Marketplace buku bekas — React + Express + PostgreSQL.
+## Fitur utama
+
+- **Katalog & pencarian** — filter kategori, kondisi, harga; detail produk dengan review
+- **Keranjang & checkout** — pembayaran dan pesanan (biaya layanan + ongkir pesanan)
+- **Wishlist**, chat pembeli–penjual, alamat otomatis (Nominatim)
+- **Seller Centre** — listing, pesanan, statistik penjual
+- **Badge penjual terverifikasi** — otomatis setelah 10 penjualan sukses, atau manual oleh admin
+- **Admin Panel** — pengguna, produk, pesanan, banner, audit log, dll
+- **CS AI** — popup bantuan via Google Gemini
 
 ## Tech stack
 
-- **Frontend:** React, Vite, Tailwind (Vercel)
-- **Backend:** Express, Prisma (Railway)
-- **Database:** PostgreSQL (Railway)
-- **CS AI:** Google Gemini
+| Layer | Teknologi |
+|-------|-----------|
+| Frontend | React, Vite, Tailwind CSS, Zustand |
+| Backend | Express 5, Prisma, JWT |
+| Database | PostgreSQL |
+| Media | Cloudinary (Cloud Storage) |
+| Deploy | Vercel (frontend), Railway (backend + DB) |
 
-## Local development
+## Prasyarat
+
+- Node.js 18+
+- PostgreSQL (lokal atau Railway)
+- Akun [Cloudinary](https://cloudinary.com) (upload gambar)
+- API key [Google AI Studio](https://aistudio.google.com) (opsional, untuk CS AI)
+
+## Setup lokal
 
 ```bash
-# Backend
+# 1. Backend
 cd backend
-cp .env.example .env   # isi DATABASE_URL, JWT_SECRET, GEMINI_API_KEY, CLOUDINARY_*
+cp .env.example .env
 npm install
 npx prisma migrate dev
 npm run db:seed
 npm run dev
 
-# Frontend (terminal baru)
+# 2. Frontend (terminal baru)
 cd frontend
-cp .env.example .env   # optional di local (proxy Vite)
+cp .env.example .env   # opsional — dev pakai proxy Vite
 npm install
 npm run dev
 ```
 
-- Frontend: http://localhost:5173  
-- Backend: http://localhost:5000  
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:5000 |
+| Health check | http://localhost:5000/health |
 
-**Akun demo:** `buyer@test.com` / `Test123!` (lihat seed untuk seller & admin)
+## Akun demo
 
-**Upload gambar:** profil & foto produk disimpan di [Cloudinary](https://cloudinary.com). Buat akun gratis, ambil `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` dari dashboard, lalu set di `.env` (lokal) dan variabel Railway (production).
+Password semua akun: **`Test123!`**
+
+| Email | Role |
+|-------|------|
+| `buyer@test.com` | Pembeli |
+| `seller@test.com` | Penjual (Semarang) |
+| `seller2@test.com` | Penjual (Yogyakarta) |
+| `admin@test.com` | Admin |
+
+## Environment variables
+
+**Backend** (`backend/.env`) — lihat `.env.example`:
+
+- `DATABASE_URL` — koneksi PostgreSQL
+- `JWT_SECRET`, `JWT_EXPIRY`
+- `FRONTEND_URL` — origin frontend (CORS)
+- `CLOUDINARY_*` — upload profil & foto produk
+- `GEMINI_API_KEY` — customer service AI
+
+**Frontend** (`frontend/.env`) — production only:
+
+- `VITE_API_URL` — URL backend Railway (tanpa `/api`)
+
+## Scripts
+
+```bash
+# Backend
+npm run dev          # development (nodemon)
+npm run deploy         # migrate + start (production)
+npm run db:seed        # data demo
+npm run db:studio      # Prisma Studio
+
+# Frontend
+npm run dev            # development
+npm run build          # production build
+npm run preview        # preview build lokal
+```
+
+## Struktur proyek
+
+```
+rebook-app/
+├── backend/           # Express API, Prisma, migrations
+│   ├── prisma/
+│   └── src/
+├── frontend/          # React SPA
+│   └── src/
+└── README.md
+```
+
+## Deployment
+
+1. **Railway** — deploy backend, set env variable, jalankan `npm run deploy`
+2. **Vercel** — deploy folder `frontend`, set `VITE_API_URL` ke URL Railway
+3. Pastikan `FRONTEND_URL` di backend mencantumkan domain Vercel
 
 ---
 
----
-
-## Health check
-
-`GET https://<backend-url>/health`
+>Proyek hanya untuk pembelajaran / portfolio — ReBook marketplace buku bekas.
