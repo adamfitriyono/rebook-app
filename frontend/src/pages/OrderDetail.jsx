@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import { CreditCard, Package, MapPin, Truck } from 'lucide-react';
 import Loading from '../components/common/Loading';
+import BackButton from '../components/common/BackButton';
 import ConfirmModal from '../components/common/ConfirmModal';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import InvoicePrintable from '../components/order/InvoicePrintable';
@@ -17,6 +18,7 @@ import {
   canPayOrder,
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
+import { formatPaymentMethod } from '../utils/paymentMethods';
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -52,7 +54,7 @@ export default function OrderDetail() {
       await processPayment({
         orderId: order.id,
         amount: order.totalPrice,
-        paymentMethod: 'midtrans',
+        paymentMethod: 'qris',
       });
       toast.success('Pembayaran berhasil!');
       loadOrder();
@@ -112,9 +114,7 @@ export default function OrderDetail() {
         onCancel={() => setShowCancelModal(false)}
       />
 
-      <Link to="/orders" className="text-primary text-sm hover:underline mb-4 inline-block">
-        ← Kembali ke Riwayat Pesanan
-      </Link>
+      <BackButton to="/orders" label="Riwayat Pesanan" className="mb-4" />
 
       <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div>
@@ -145,26 +145,35 @@ export default function OrderDetail() {
             <Package size={18} /> Item Pesanan
           </h2>
           <div className="space-y-4">
-            {order.items.map((item) => (
-              <Link
-                key={item.product.id}
-                to={`/product/${item.product.id}`}
-                className="flex gap-3 hover:bg-gray-50 rounded-lg p-2 -mx-2"
-              >
-                <img
-                  src={resolveMediaUrl(item.product.images?.[0], 'https://picsum.photos/80/100')}
-                  alt={item.product.title}
-                  className="w-16 h-20 object-cover rounded"
-                />
-                <div>
-                  <p className="font-medium text-sm">{item.product.title}</p>
-                  <p className="text-sm text-subtle">Qty: {item.quantity}</p>
-                  <p className="text-primary font-bold text-sm">
-                    {formatPrice(item.priceAtTime * item.quantity)}
-                  </p>
+            {order.items.map((item) => {
+              const canReviewItem = ['delivered', 'completed'].includes(order.status);
+              return (
+                <div key={item.product.id} className="flex gap-3 items-start p-2 -mx-2 rounded-lg">
+                  <Link to={`/product/${item.product.id}`} className="flex gap-3 flex-1 min-w-0 hover:opacity-90">
+                    <img
+                      src={resolveMediaUrl(item.product.images?.[0], 'https://picsum.photos/80/100')}
+                      alt={item.product.title}
+                      className="w-16 h-20 object-cover rounded shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{item.product.title}</p>
+                      <p className="text-sm text-subtle">Qty: {item.quantity}</p>
+                      <p className="text-primary font-bold text-sm">
+                        {formatPrice(item.priceAtTime * item.quantity)}
+                      </p>
+                    </div>
+                  </Link>
+                  {canReviewItem && (
+                    <Link
+                      to={`/product/${item.product.id}#ulasan`}
+                      className="shrink-0 text-xs font-medium text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary/5 self-center"
+                    >
+                      Beri Ulasan
+                    </Link>
+                  )}
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
           <div className="border-t mt-4 pt-4 flex justify-between font-bold">
             <span>Total</span>
@@ -190,7 +199,7 @@ export default function OrderDetail() {
               </h2>
               <div className="text-sm space-y-1 text-muted">
                 <p>ID: {order.transaction.transactionId}</p>
-                <p>Metode: {order.transaction.paymentMethod}</p>
+                <p>Metode: {formatPaymentMethod(order.transaction.paymentMethod)}</p>
                 <p>Jumlah: {formatPrice(order.transaction.amount)}</p>
                 <p>Status: {order.transaction.status}</p>
               </div>

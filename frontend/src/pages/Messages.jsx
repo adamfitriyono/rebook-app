@@ -4,6 +4,7 @@ import ProtectedRoute from '../components/auth/ProtectedRoute';
 import ConversationList from '../components/chat/ConversationList';
 import ChatPanel from '../components/chat/ChatPanel';
 import Loading from '../components/common/Loading';
+import BackButton from '../components/common/BackButton';
 import { getConversations } from '../services/chat';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -50,6 +51,18 @@ function MessagesContent() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-6 h-[calc(100vh-8rem)]">
+      <BackButton
+        {...(conversationId
+          ? {
+              label: 'Daftar Pesan',
+              onClick: () => {
+                navigate('/messages');
+                setMobileShowChat(false);
+              },
+            }
+          : { fallback: '/', label: 'Beranda' })}
+        className="mb-4"
+      />
       <h1 className="text-2xl font-bold text-heading mb-4">Pesan</h1>
       <div className="surface-card overflow-hidden flex h-[calc(100%-3rem)] min-h-[400px]">
         <aside
@@ -69,18 +82,6 @@ function MessagesContent() {
             mobileShowChat && conversationId ? 'flex' : 'hidden md:flex'
           }`}
         >
-          {conversationId && (
-            <button
-              type="button"
-              onClick={() => {
-                navigate('/messages');
-                setMobileShowChat(false);
-              }}
-              className="md:hidden px-4 py-2 text-sm text-primary border-b border-gray-200 dark:border-gray-700"
-            >
-              ← Kembali ke daftar
-            </button>
-          )}
           <ChatPanel
             conversationId={activeId}
             userId={user?.id}

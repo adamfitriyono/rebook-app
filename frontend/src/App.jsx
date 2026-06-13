@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
+import ScrollToTop from './components/common/ScrollToTop';
 import ToastContainer from './components/common/Toast';
 import CustomerServicePopup from './components/common/CustomerServicePopup';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -17,10 +18,8 @@ import OrderDetail from './pages/OrderDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
-import MyListings from './pages/MyListings';
-import SellBook from './pages/SellBook';
 import EditListing from './pages/EditListing';
-import SellerDashboard from './pages/SellerDashboard';
+import SellerCentreRoutes from './pages/seller/SellerCentreRoutes';
 import SellerStore from './pages/SellerStore';
 import Messages from './pages/Messages';
 import AdminDashboard from './pages/AdminDashboard';
@@ -57,10 +56,11 @@ function AppContent() {
           <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/my-listings" element={<ProtectedRoute roles={['seller', 'admin']}><MyListings /></ProtectedRoute>} />
-          <Route path="/sell" element={<ProtectedRoute roles={['seller', 'admin']}><SellBook /></ProtectedRoute>} />
+          <Route path="/seller/*" element={<SellerCentreRoutes />} />
+          <Route path="/my-listings" element={<Navigate to="/seller/listings" replace />} />
+          <Route path="/sell" element={<Navigate to="/seller/sell" replace />} />
+          <Route path="/seller-dashboard" element={<Navigate to="/seller" replace />} />
           <Route path="/edit-listing/:id" element={<ProtectedRoute roles={['seller', 'admin']}><EditListing /></ProtectedRoute>} />
-          <Route path="/seller-dashboard" element={<ProtectedRoute roles={['seller', 'admin']}><SellerDashboard /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -73,6 +73,7 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppContent />
     </BrowserRouter>
   );

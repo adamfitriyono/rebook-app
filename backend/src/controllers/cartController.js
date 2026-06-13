@@ -1,14 +1,22 @@
 const prisma = require('../config/database');
 
+const cartProductSelect = {
+  id: true,
+  title: true,
+  price: true,
+  images: true,
+  stock: true,
+  available: true,
+  seller: { select: { id: true, fullName: true } },
+};
+
 async function getOrCreateCart(userId) {
   let cart = await prisma.cart.findUnique({
     where: { userId },
     include: {
       items: {
         include: {
-          product: {
-            select: { id: true, title: true, price: true, images: true, stock: true, available: true },
-          },
+          product: { select: cartProductSelect },
         },
       },
     },
@@ -20,9 +28,7 @@ async function getOrCreateCart(userId) {
       include: {
         items: {
           include: {
-            product: {
-              select: { id: true, title: true, price: true, images: true, stock: true, available: true },
-            },
+            product: { select: cartProductSelect },
           },
         },
       },
@@ -40,17 +46,31 @@ function formatCart(cart) {
       title: item.product.title,
       price: Number(item.product.price),
       images: item.product.images,
+      seller: item.product.seller
+        ? { id: item.product.seller.id, fullName: item.product.seller.fullName }
+        : null,
     },
     quantity: item.quantity,
+    selected: item.selected ?? true,
   }));
 
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const selectedItems = items.filter((item) => item.selected);
+  const selectedSubtotal = selectedItems.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0,
+  );
+  const selectedItemCount = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return {
     id: cart.id,
     items,
     subtotal,
-    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    itemCount,
+    selectedSubtotal,
+    selectedItemCount,
   };
 }
 
@@ -115,8 +135,7 @@ exports.addToCart = async (req, res, next) => {
 exports.updateCartItem = async (req, res, next) => {
   try {
     const itemId = parseInt(req.params.itemId, 10);
-    const { quantity } = req.body;
-    const qty = parseInt(quantity, 10);
+    const { quantity, selected } = req.body;
 
     const item = await prisma.cartItem.findUnique({
       where: { id: itemId },
@@ -127,34 +146,90 @@ exports.updateCartItem = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Cart item not found' });
     }
 
-    if (qty <= 0) {
-      await prisma.cartItem.delete({ where: { id: itemId } });
-      return res.json({ success: true, message: 'Item removed from cart' });
-    }
+    if (quantity !== undefined) {
+      const qty = parseInt(quantity, 10);
 
-    if (qty > item.product.stock) {
-      return res.status(400).json({ success: false, error: 'Insufficient stock' });
-    }
+      if (qty <= 0) {
+        await prisma.cartItem.delete({ where: { id: itemId } });
+        return res.json({ success: true, message: 'Item removed from cart' });
+      }
 
-    const updated = await prisma.cartItem.update({
-      where: { id: itemId },
-      data: { quantity: qty },
-      include: { product: true },
-    });
+      if (qty > item.product.stock) {
+        return res.status(400).json({ success: false, error: 'Insufficient stock' });
+      }
 
-    res.json({
-      success: true,
-      message: 'Cart updated',
-      data: {
-        id: updated.id,
-        product: {
-          id: updated.product.id,
-          title: updated.product.title,
-          price: Number(updated.product.price),
+      const updated = await prisma.cartItem.update({
+        where: { id: itemId },
+        data: { quantity: qty },
+        include: { product: true },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Cart updated',
+        data: {
+          id: updated.id,
+          product: {
+            id: updated.product.id,
+            title: updated.product.title,
+            price: Number(updated.product.price),
+          },
+          quantity: updated.quantity,
+          selected: updated.selected,
         },
-        quantity: updated.quantity,
-      },
-    });
+      });
+    }
+
+    if (typeof selected === 'boolean') {
+      const updated = await prisma.cartItem.update({
+        where: { id: itemId },
+        data: { selected },
+        include: { product: true },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Selection updated',
+        data: {
+          id: updated.id,
+          selected: updated.selected,
+        },
+      });
+    }
+
+    return res.status(400).json({ success: false, error: 'Nothing to update' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateCartSelection = async (req, res, next) => {
+  try {
+    const { selected, itemIds, selectAll } = req.body;
+
+    if (typeof selected !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'selected must be a boolean' });
+    }
+
+    const cart = await getOrCreateCart(req.user.id);
+
+    if (selectAll) {
+      await prisma.cartItem.updateMany({
+        where: { cartId: cart.id },
+        data: { selected },
+      });
+    } else if (Array.isArray(itemIds) && itemIds.length > 0) {
+      const ids = itemIds.map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id));
+      await prisma.cartItem.updateMany({
+        where: { cartId: cart.id, id: { in: ids } },
+        data: { selected },
+      });
+    } else {
+      return res.status(400).json({ success: false, error: 'itemIds or selectAll required' });
+    }
+
+    const updated = await getOrCreateCart(req.user.id);
+    res.json({ success: true, data: formatCart(updated) });
   } catch (err) {
     next(err);
   }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Loading from '../components/common/Loading';
 import ConfirmModal from '../components/common/ConfirmModal';
+import BackButton from '../components/common/BackButton';
 import { Trash2, Plus } from 'lucide-react';
 import {
   getAdminStats,
@@ -158,6 +159,7 @@ export default function AdminDashboard() {
         onCancel={() => setDeleteCategoryTarget(null)}
       />
 
+      <BackButton fallback="/" className="mb-4" />
       <h1 className="text-2xl font-bold text-heading mb-6">Admin Panel</h1>
 
       <div className="flex flex-wrap gap-2 mb-6">

@@ -5,7 +5,7 @@ import Loading from '../components/common/Loading';
 import RatingStars from '../components/product/RatingStars';
 import { getProductById } from '../services/products';
 import { addToCart, clearCart } from '../services/cart';
-import { createReview } from '../services/reviews';
+import { createReview, getReviewEligibility } from '../services/reviews';
 import { createConversation } from '../services/chat';
 import { useAuthStore, useCartStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
@@ -14,6 +14,10 @@ import ProductImageGallery from '../components/product/ProductImageGallery';
 import BuyerProtectionBadge from '../components/product/BuyerProtectionBadge';
 import { resolveAvatarUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
+import BackButton from '../components/common/BackButton';
+import ProductSpecsTable from '../components/product/ProductSpecsTable';
+import RelatedProducts from '../components/product/RelatedProducts';
+import { hasProductSpecs } from '../utils/productSpecs';
 
 const DESCRIPTION_LIMIT = 180;
 
@@ -31,6 +35,17 @@ export default function ProductDetail() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
+  const [reviewEligibility, setReviewEligibility] = useState(null);
+
+  const loadReviewEligibility = () => {
+    if (!user || !id) {
+      setReviewEligibility(null);
+      return Promise.resolve();
+    }
+    return getReviewEligibility(id)
+      .then(({ data }) => setReviewEligibility(data.data))
+      .catch(() => setReviewEligibility(null));
+  };
 
   const loadProduct = () => {
     getProductById(id)
@@ -43,6 +58,10 @@ export default function ProductDetail() {
     setLoading(true);
     loadProduct();
   }, [id]);
+
+  useEffect(() => {
+    loadReviewEligibility();
+  }, [user, id]);
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -100,6 +119,7 @@ export default function ProductDetail() {
       setReviewComment('');
       setReviewRating(5);
       loadProduct();
+      loadReviewEligibility();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Gagal mengirim ulasan');
     } finally {
@@ -107,8 +127,9 @@ export default function ProductDetail() {
     }
   };
 
-  const canReview = user && user.id !== product?.seller?.id;
-  const hasReviewed = product?.reviews?.some((r) => r.author === user?.fullName);
+  const canReview = reviewEligibility?.canReview === true;
+  const hasReviewed = reviewEligibility?.hasReviewed
+    || product?.reviews?.some((r) => r.authorId === user?.id);
   const isOwnProduct = user?.id === product?.seller?.id;
 
   const handleStartChat = async () => {
@@ -146,6 +167,7 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
+      <BackButton fallback="/catalog" className="mb-4" />
       <div className="grid md:grid-cols-2 gap-8 items-start surface-card p-6">
         <ProductImageGallery
           images={product.images}
@@ -193,6 +215,15 @@ export default function ProductDetail() {
             )}
             <p className="text-xs text-subtle mt-2">Stok: {product.stock}</p>
           </div>
+
+          {hasProductSpecs(product) && (
+            <div>
+              <h2 className="inline-block text-primary font-semibold border-b-2 border-primary pb-0.5 mb-3">
+                Spesifikasi
+              </h2>
+              <ProductSpecsTable product={product} />
+            </div>
+          )}
 
           <BuyerProtectionBadge />
 
@@ -253,11 +284,11 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div className="mt-8 surface-card p-6">
+      <div id="ulasan" className="mt-8 surface-card p-6 scroll-mt-24">
         <h2 className="text-xl font-bold mb-4">Ulasan ({product.reviewCount || 0})</h2>
 
-        {canReview && !hasReviewed && (
-          <form onSubmit={handleSubmitReview} className="mb-6 pb-6 border-b">
+        {canReview && (
+          <form onSubmit={handleSubmitReview} className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
             <p className="text-sm font-medium mb-2">Berikan ulasan Anda</p>
             <div className="flex gap-1 mb-3">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -296,7 +327,20 @@ export default function ProductDetail() {
             <button type="button" onClick={() => navigate('/login')} className="text-primary hover:underline">
               Login
             </button>
-            {' '}untuk memberikan ulasan.
+            {' '}untuk melihat opsi ulasan.
+          </p>
+        )}
+
+        {user && isOwnProduct && (
+          <p className="text-sm text-subtle mb-4">Penjual tidak dapat memberi ulasan pada produk sendiri.</p>
+        )}
+
+        {user && !isOwnProduct && !canReview && !hasReviewed && reviewEligibility?.reason === 'not_eligible' && (
+          <p className="text-sm text-subtle mb-4">
+            Ulasan tersedia setelah Anda menerima pesanan buku ini.{' '}
+            <Link to="/orders" className="text-primary hover:underline">
+              Lihat pesanan
+            </Link>
           </p>
         )}
 
@@ -323,6 +367,10 @@ export default function ProductDetail() {
           <p className="text-subtle text-sm">Belum ada ulasan.</p>
         )}
       </div>
+
+      {product.category && (
+        <RelatedProducts category={product.category} excludeProductId={product.id} />
+      )}
     </div>
   );
 }

@@ -51,6 +51,11 @@ model Product {
   category        String
   discountPercent Int?
 
+  weightGram Int?
+  lengthCm   Decimal? @db.Decimal(6, 1)
+  widthCm    Decimal? @db.Decimal(6, 1)
+  heightCm   Decimal? @db.Decimal(6, 1)
+
   sellerId Int
   seller   User @relation("SellerProducts", fields: [sellerId], references: [id])
 
@@ -58,6 +63,7 @@ model Product {
 
   stock     Int     @default(1)
   sold      Int     @default(0)
+  viewCount Int     @default(0)
   available Boolean @default(true)
 
   cartItems      CartItem[]
@@ -92,6 +98,7 @@ model CartItem {
   product   Product @relation(fields: [productId], references: [id])
 
   quantity Int @default(1)
+  selected Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

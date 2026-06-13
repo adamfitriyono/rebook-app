@@ -9,7 +9,7 @@ import { formatPrice } from '../utils/formatters';
 import { resolveMediaUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
 
-export default function MyListings() {
+export default function MyListings({ embedded = false }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -41,7 +41,7 @@ export default function MyListings() {
   if (loading) return <Loading />;
 
   return (
-    <div className="max-w-content mx-auto px-4 py-8">
+    <div className={embedded ? '' : 'max-w-content mx-auto px-4 py-8'}>
       <ConfirmModal
         open={!!deleteTarget}
         title="Hapus Listing"
@@ -53,11 +53,12 @@ export default function MyListings() {
       />
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-heading">Listing Saya</h1>
-        <Link to="/sell" className="btn-primary btn-sm">+ Jual Buku</Link>
+        {!embedded && <h1 className="text-2xl font-bold text-heading">Listing Saya</h1>}
+        {embedded && <h2 className="text-lg font-bold text-heading">Listing Saya</h2>}
+        <Link to="/seller/sell" className="btn-primary btn-sm">+ Jual Buku</Link>
       </div>
       {products.length === 0 ? (
-        <p className="text-subtle">Belum ada listing. <Link to="/sell" className="text-primary">Jual buku pertama</Link></p>
+        <p className="text-subtle">Belum ada listing. <Link to="/seller/sell" className="text-primary">Jual buku pertama</Link></p>
       ) : (
         <div className="space-y-4">
           {products.map((product) => (
@@ -72,6 +73,7 @@ export default function MyListings() {
                 <p className="text-primary font-bold">{formatPrice(product.price)}</p>
                 <p className="text-sm text-subtle">
                   {CONDITION_LABELS[product.condition]} | Stok: {product.stock} | Terjual: {product.sold}
+                  {product.viewCount != null && ` | Views: ${product.viewCount}`}
                 </p>
               </div>
               <div className="flex flex-col gap-2 self-center">

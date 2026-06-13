@@ -1,11 +1,12 @@
 const prisma = require('../config/database');
+const { getReviewEligibility, assertCanReview } = require('../utils/reviewHelpers');
 
 exports.getProductReviews = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);
     const reviews = await prisma.review.findMany({
       where: { productId },
-      include: { author: { select: { fullName: true } } },
+      include: { author: { select: { id: true, fullName: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -15,6 +16,7 @@ exports.getProductReviews = async (req, res, next) => {
         id: r.id,
         rating: r.rating,
         comment: r.comment,
+        authorId: r.author.id,
         author: r.author.fullName,
         createdAt: r.createdAt,
       })),
@@ -24,22 +26,36 @@ exports.getProductReviews = async (req, res, next) => {
   }
 };
 
+exports.getReviewEligibility = async (req, res, next) => {
+  try {
+    const productId = parseInt(req.params.productId, 10);
+    const eligibility = await getReviewEligibility(prisma, req.user.id, productId);
+
+    res.json({ success: true, data: eligibility });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.createReview = async (req, res, next) => {
   try {
     const { productId, rating, comment } = req.body;
+    const pid = parseInt(productId, 10);
 
-    if (!productId || !rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ success: false, error: 'Invalid review data' });
+    if (!pid || !rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, error: 'Data ulasan tidak valid' });
     }
 
-    const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (!product) {
-      return res.status(404).json({ success: false, error: 'Product not found' });
+    const check = await assertCanReview(prisma, req.user.id, pid);
+    if (!check.ok) {
+      return res.status(check.status).json({ success: false, error: check.error });
     }
+
+    const product = await prisma.product.findUnique({ where: { id: pid } });
 
     const review = await prisma.review.create({
       data: {
-        productId,
+        productId: pid,
         authorId: req.user.id,
         targetSellerId: product.sellerId,
         rating: parseInt(rating, 10),
@@ -54,7 +70,7 @@ exports.createReview = async (req, res, next) => {
     });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(400).json({ success: false, error: 'You already reviewed this product' });
+      return res.status(400).json({ success: false, error: 'Anda sudah memberi ulasan untuk produk ini' });
     }
     next(err);
   }

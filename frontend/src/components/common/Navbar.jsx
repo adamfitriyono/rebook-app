@@ -90,18 +90,10 @@ export default function Navbar() {
               Admin Panel
             </Link>
           )}
-          {user.role === 'seller' && (
-            <>
-              <Link to="/sell" onClick={closeMobile} className="btn-ghost">
-                Jual Buku
-              </Link>
-              <Link to="/my-listings" onClick={closeMobile} className="btn-ghost">
-                Listing Saya
-              </Link>
-              <Link to="/seller-dashboard" onClick={closeMobile} className="btn-ghost">
-                Dashboard
-              </Link>
-            </>
+          {(user.role === 'seller' || user.role === 'admin') && (
+            <Link to="/seller" onClick={closeMobile} className="btn-ghost font-medium text-primary">
+              Seller Centre
+            </Link>
           )}
           <button
             type="button"
@@ -194,18 +186,10 @@ export default function Navbar() {
                         Admin Panel
                       </Link>
                     )}
-                    {user.role === 'seller' && (
-                      <>
-                        <Link to="/sell" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
-                          Jual Buku
-                        </Link>
-                        <Link to="/my-listings" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
-                          Listing Saya
-                        </Link>
-                        <Link to="/seller-dashboard" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
-                          Dashboard
-                        </Link>
-                      </>
+                    {(user.role === 'seller' || user.role === 'admin') && (
+                      <Link to="/seller" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-primary font-medium">
+                        Seller Centre
+                      </Link>
                     )}
                     <button type="button" onClick={logout} className="block w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-red-600 dark:text-red-400">
                       Logout

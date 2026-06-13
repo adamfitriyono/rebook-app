@@ -5,6 +5,8 @@ import { updateProfile } from '../services/auth';
 import { useAuthStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
 import { resolveMediaUrl, resolveAvatarUrl } from '../utils/media';
+import BackButton from '../components/common/BackButton';
+import AddressAutocomplete from '../components/common/AddressAutocomplete';
 
 export default function Profile() {
   const { user, setUser } = useAuthStore();
@@ -12,7 +14,8 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset, setValue, watch } = useForm();
+  const address = watch('address') || '';
 
   useEffect(() => {
     if (user) {
@@ -73,6 +76,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
+      <BackButton fallback="/" className="mb-4" />
       <h1 className="text-2xl font-bold text-heading mb-6">Profil Saya</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg surface-card p-6 space-y-4">
         <div className="flex flex-col items-center gap-3 pb-2">
@@ -110,7 +114,18 @@ export default function Profile() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Alamat</label>
-          <input {...register('address')} className="input-field" />
+          <input type="hidden" {...register('address')} />
+          <AddressAutocomplete
+            name="addressDisplay"
+            value={address}
+            onChange={(text) => setValue('address', text)}
+            onSelect={(item) => {
+              setValue('address', item.addressLine || item.label);
+              if (item.city) setValue('city', item.city);
+              if (item.province) setValue('province', item.province);
+            }}
+            placeholder="Ketik nama jalan, kelurahan, atau landmark..."
+          />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>

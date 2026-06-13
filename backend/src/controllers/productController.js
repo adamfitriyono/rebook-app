@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-const { computeSellerRating, formatProduct, parseDiscountPercent } = require('../utils/productHelpers');
+const { computeSellerRating, formatProduct, parseDiscountPercent, parseShippingSpecs } = require('../utils/productHelpers');
 const { validateCategoryName } = require('./categoryController');
 const { uploadImages, DEFAULT_PRODUCT_IMAGE } = require('../utils/cloudinaryUpload');
 
@@ -81,7 +81,7 @@ exports.getProductById = async (req, res, next) => {
       include: {
         seller: { select: { id: true, fullName: true, phoneNumber: true, profileImage: true, city: true } },
         reviews: {
-          include: { author: { select: { fullName: true } } },
+          include: { author: { select: { id: true, fullName: true } } },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -91,6 +91,10 @@ exports.getProductById = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
+    prisma.product
+      .update({ where: { id }, data: { viewCount: { increment: 1 } } })
+      .catch(() => {});
+
     const sellerRating = await computeSellerRating(prisma, product.sellerId);
     const formatted = formatProduct(product, sellerRating);
 
@@ -98,6 +102,7 @@ exports.getProductById = async (req, res, next) => {
       id: r.id,
       rating: r.rating,
       comment: r.comment,
+      authorId: r.author.id,
       author: r.author.fullName,
       createdAt: r.createdAt,
     }));
@@ -126,6 +131,11 @@ exports.createProduct = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
     }
 
+    const shipping = parseShippingSpecs(req.body);
+    if (shipping.error) {
+      return res.status(400).json({ success: false, error: shipping.error });
+    }
+
     const images = req.files?.length
       ? await uploadImages(req.files, 'products')
       : [DEFAULT_PRODUCT_IMAGE];
@@ -134,13 +144,14 @@ exports.createProduct = async (req, res, next) => {
       data: {
         title,
         author: author || null,
-        isbn: isbn || null,
+        isbn: isbn?.trim() || null,
         description,
         condition,
         price: parseFloat(price),
         category,
         stock: parseInt(stock, 10) || 1,
         discountPercent: parsedDiscount,
+        ...shipping.data,
         sellerId: req.user.id,
         images,
       },
@@ -168,7 +179,7 @@ exports.updateProduct = async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'You can only update your own products' });
     }
 
-    const { title, author, isbn, description, condition, price, category, stock, available, discountPercent } = req.body;
+    const { title, author, isbn, description, condition, price, category, stock, available, discountPercent, weightGram, lengthCm, widthCm, heightCm } = req.body;
     const updateData = {};
     if (title) updateData.title = title;
     if (author !== undefined) updateData.author = author;
@@ -191,6 +202,35 @@ exports.updateProduct = async (req, res, next) => {
         return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
       }
       updateData.discountPercent = parsedDiscount;
+    }
+
+    if (weightGram !== undefined) {
+      const parsed = parseOptionalInt(weightGram, { max: 50000 });
+      if (parsed === undefined) {
+        return res.status(400).json({ success: false, error: 'Berat paket harus angka 0–50000 gram' });
+      }
+      updateData.weightGram = parsed;
+    }
+    if (lengthCm !== undefined) {
+      const parsed = parseOptionalDecimal(lengthCm);
+      if (parsed === undefined) {
+        return res.status(400).json({ success: false, error: 'Panjang paket tidak valid' });
+      }
+      updateData.lengthCm = parsed;
+    }
+    if (widthCm !== undefined) {
+      const parsed = parseOptionalDecimal(widthCm);
+      if (parsed === undefined) {
+        return res.status(400).json({ success: false, error: 'Lebar paket tidak valid' });
+      }
+      updateData.widthCm = parsed;
+    }
+    if (heightCm !== undefined) {
+      const parsed = parseOptionalDecimal(heightCm);
+      if (parsed === undefined) {
+        return res.status(400).json({ success: false, error: 'Tinggi paket tidak valid' });
+      }
+      updateData.heightCm = parsed;
     }
 
     if (req.files?.length > 0) {

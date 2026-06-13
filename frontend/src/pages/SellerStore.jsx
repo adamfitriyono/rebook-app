@@ -5,6 +5,7 @@ import ProductGrid from '../components/product/ProductGrid';
 import Loading from '../components/common/Loading';
 import { getSellerProfile, getSellerProducts } from '../services/sellers';
 import { resolveAvatarUrl } from '../utils/media';
+import BackButton from '../components/common/BackButton';
 
 const STATUS_TABS = [
   { key: 'all', label: 'Semua' },
@@ -55,6 +56,7 @@ export default function SellerStore() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
+      <BackButton fallback="/catalog" className="mb-4" />
       <div className="surface-card p-6 mb-6">
         <div className="flex items-center gap-4">
           <img

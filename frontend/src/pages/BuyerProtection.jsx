@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import { ShieldCheck, RotateCcw, PackageCheck, Headphones } from 'lucide-react';
+import BackButton from '../components/common/BackButton';
 
 const BENEFITS = [
   {
@@ -31,9 +31,7 @@ const BENEFITS = [
 export default function BuyerProtection() {
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <Link to="/" className="text-primary text-sm hover:underline mb-4 inline-block">
-        ← Kembali
-      </Link>
+      <BackButton fallback="/" className="mb-4" />
 
       <div className="surface-card p-6 md:p-8 max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">

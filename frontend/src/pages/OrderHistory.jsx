@@ -18,6 +18,7 @@ import {
   canPayOrder,
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_FILTERS } from '../utils/constants';
+import BackButton from '../components/common/BackButton';
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
@@ -51,7 +52,7 @@ export default function OrderHistory() {
       await processPayment({
         orderId: order.id,
         amount: order.totalPrice,
-        paymentMethod: 'midtrans',
+        paymentMethod: 'qris',
       });
       toast.success('Pembayaran berhasil!');
       fetchOrders();
@@ -102,6 +103,7 @@ export default function OrderHistory() {
         onCancel={() => setCancelTarget(null)}
       />
 
+      <BackButton fallback="/" className="mb-4" />
       <h1 className="text-2xl font-bold text-heading mb-6">Riwayat Pesanan</h1>
 
       <div className="flex flex-wrap gap-2 mb-6">

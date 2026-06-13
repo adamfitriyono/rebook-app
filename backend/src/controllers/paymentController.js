@@ -1,8 +1,13 @@
 const prisma = require('../config/database');
+const { isValidPaymentMethod } = require('../utils/paymentMethods');
 
 exports.processPayment = async (req, res, next) => {
   try {
-    const { orderId, amount, paymentMethod = 'midtrans' } = req.body;
+    const { orderId, amount, paymentMethod } = req.body;
+
+    if (!paymentMethod || !isValidPaymentMethod(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Metode pembayaran tidak valid' });
+    }
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
 

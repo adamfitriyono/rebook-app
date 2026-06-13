@@ -30,6 +30,10 @@ function formatProduct(product, sellerRating = 0) {
     category: product.category,
     images: product.images,
     isbn: product.isbn,
+    weightGram: product.weightGram ?? null,
+    lengthCm: product.lengthCm != null ? Number(product.lengthCm) : null,
+    widthCm: product.widthCm != null ? Number(product.widthCm) : null,
+    heightCm: product.heightCm != null ? Number(product.heightCm) : null,
     rating,
     reviewCount,
     seller: product.seller
@@ -43,6 +47,7 @@ function formatProduct(product, sellerRating = 0) {
       : undefined,
     stock: product.stock,
     sold: product.sold,
+    viewCount: product.viewCount ?? 0,
     available: product.available,
     discountPercent: product.discountPercent || null,
     createdAt: product.createdAt,
@@ -56,4 +61,41 @@ function parseDiscountPercent(value) {
   return n === 0 ? null : n;
 }
 
-module.exports = { computeProductRating, computeSellerRating, formatProduct, parseDiscountPercent };
+function parseOptionalInt(value, { max } = {}) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n) || n < 0) return undefined;
+  if (max !== undefined && n > max) return undefined;
+  return n;
+}
+
+function parseOptionalDecimal(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = parseFloat(value);
+  if (Number.isNaN(n) || n < 0) return undefined;
+  return Math.round(n * 10) / 10;
+}
+
+function parseShippingSpecs(body) {
+  const weightGram = parseOptionalInt(body.weightGram, { max: 50000 });
+  if (weightGram === undefined) {
+    return { error: 'Berat paket harus angka 0–50000 gram' };
+  }
+
+  const lengthCm = parseOptionalDecimal(body.lengthCm);
+  if (lengthCm === undefined) return { error: 'Panjang paket tidak valid' };
+  const widthCm = parseOptionalDecimal(body.widthCm);
+  if (widthCm === undefined) return { error: 'Lebar paket tidak valid' };
+  const heightCm = parseOptionalDecimal(body.heightCm);
+  if (heightCm === undefined) return { error: 'Tinggi paket tidak valid' };
+
+  return { data: { weightGram, lengthCm, widthCm, heightCm } };
+}
+
+module.exports = {
+  computeProductRating,
+  computeSellerRating,
+  formatProduct,
+  parseDiscountPercent,
+  parseShippingSpecs,
+};

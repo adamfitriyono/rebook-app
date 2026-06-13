@@ -5,6 +5,8 @@ import Loading from '../components/common/Loading';
 import { getOrderById } from '../services/orders';
 import { formatPrice } from '../utils/formatters';
 import { getOrderProductTitle } from '../utils/orderHelpers';
+import { formatPaymentMethod } from '../utils/paymentMethods';
+import BackButton from '../components/common/BackButton';
 
 export default function OrderConfirmation() {
   const { id } = useParams();
@@ -23,10 +25,16 @@ export default function OrderConfirmation() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-16 text-center">
+      <BackButton to="/orders" label="Riwayat Pesanan" className="mb-6 mx-auto justify-center" />
       <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
       <h1 className="text-2xl font-bold text-heading mb-2">Pembayaran Berhasil!</h1>
       <p className="text-muted mb-2">{getOrderProductTitle(order)}</p>
-      <p className="text-subtle text-sm mb-6">Pesanan Anda telah dibayar.</p>
+      <p className="text-subtle text-sm mb-2">Pesanan Anda telah dibayar.</p>
+      {order.transaction?.paymentMethod && (
+        <p className="text-sm text-muted mb-4">
+          Metode: {formatPaymentMethod(order.transaction.paymentMethod)}
+        </p>
+      )}
       <p className="text-xl font-bold text-primary mb-8">{formatPrice(order.totalPrice)}</p>
       <div className="flex gap-4 justify-center flex-wrap">
         {order.paymentStatus === 'paid' && (

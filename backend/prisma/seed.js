@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { buildOrderBreakdown } = require('../src/utils/orderFees');
 
 const prisma = new PrismaClient();
 
@@ -27,20 +28,9 @@ const reviewComments = [
   'Harga worth it untuk buku bekas segini.',
   'Ada sedikit coretan di pinggir halaman, tapi masih layak baca.',
   'Penjual responsif dan ramah. Puas belanja di sini.',
-  'Buku masih rapi, tidak ada halaman yang sobek.',
-  'Sangat membantu untuk belajar, kondisi sesuai foto.',
-  'Packing rapi dengan bubble wrap, buku sampai mulus.',
 ];
 
 const DEFAULT_CATEGORIES = ['Teknologi', 'Fiksi', 'Pendidikan', 'Bisnis', 'Hobi'];
-
-const reviewAuthors = [
-  { email: 'reviewer1@test.com', fullName: 'Andi Pratama' },
-  { email: 'reviewer2@test.com', fullName: 'Siti Rahayu' },
-  { email: 'reviewer3@test.com', fullName: 'Budi Santoso' },
-  { email: 'reviewer4@test.com', fullName: 'Dewi Lestari' },
-  { email: 'reviewer5@test.com', fullName: 'Rizky Maulana' },
-];
 
 async function main() {
   const hashedPassword = await bcrypt.hash('Test123!', 10);
@@ -102,25 +92,14 @@ async function main() {
     },
   });
 
-  const reviewers = [];
-  for (const r of reviewAuthors) {
-    const user = await prisma.user.create({
-      data: {
-        email: r.email,
-        password: hashedPassword,
-        fullName: r.fullName,
-        role: 'buyer',
-      },
-    });
-    reviewers.push(user);
-  }
-
   const sellers = [seller, seller2];
-  const products = [];
+  let reviewCount = 0;
 
   for (let i = 0; i < sampleBooks.length; i++) {
     const book = sampleBooks[i];
     const sellerUser = sellers[i % sellers.length];
+    const hasCompletedSale = i < 5;
+    const price = book.price;
 
     const product = await prisma.product.create({
       data: {
@@ -128,30 +107,59 @@ async function main() {
         author: book.author,
         description: `Buku bekas berkualitas: ${book.title} oleh ${book.author}. Kondisi ${book.condition}.`,
         condition: book.condition,
-        price: book.price,
+        price,
         category: book.category,
         discountPercent: book.discountPercent || null,
         sellerId: sellerUser.id,
         images: [`https://picsum.photos/seed/rebook${i + 1}/400/500`],
-        stock: Math.floor(Math.random() * 5) + 1,
-        sold: Math.floor(Math.random() * 50) + 1,
+        stock: hasCompletedSale ? 0 : 1,
+        sold: hasCompletedSale ? 1 : 0,
+        available: !hasCompletedSale,
       },
     });
 
-    products.push({ product, sellerUser });
+    if (hasCompletedSale) {
+      const breakdown = buildOrderBreakdown(price, 1);
+      const order = await prisma.order.create({
+        data: {
+          buyerId: buyer.id,
+          totalPrice: breakdown.totalPrice,
+          status: 'delivered',
+          paymentStatus: 'paid',
+          shippingAddress: 'Jl. Test No. 1',
+          shippingCity: 'Semarang',
+          shippingProvince: 'Jawa Tengah',
+          items: {
+            create: [{
+              productId: product.id,
+              quantity: 1,
+              priceAtTime: price,
+            }],
+          },
+        },
+      });
 
-    const reviewCount = 2 + (i % 3);
-    for (let j = 0; j < reviewCount; j++) {
-      const reviewer = reviewers[(i + j) % reviewers.length];
+      await prisma.transaction.create({
+        data: {
+          orderId: order.id,
+          userId: buyer.id,
+          amount: breakdown.totalPrice,
+          paymentMethod: 'qris',
+          transactionId: `TXN-SEED-${order.id}`,
+          status: 'success',
+        },
+      });
+
       await prisma.review.create({
         data: {
           productId: product.id,
-          authorId: reviewer.id,
+          authorId: buyer.id,
           targetSellerId: sellerUser.id,
-          rating: 3 + ((i + j) % 3),
-          comment: reviewComments[(i + j) % reviewComments.length],
+          rating: 4 + (i % 2),
+          comment: reviewComments[i % reviewComments.length],
         },
       });
+      reviewCount += 1;
     }
   }
 
@@ -160,7 +168,7 @@ async function main() {
   });
 
   console.log('Database seeded successfully');
-  console.log(`Created ${products.length} products with reviews on every product`);
+  console.log(`Created ${sampleBooks.length} products (stock 1, ${reviewCount} with 1 verified review each)`);
   console.log('Test accounts (password: Test123!):');
   console.log('  buyer@test.com, seller@test.com, seller2@test.com, admin@test.com');
 }

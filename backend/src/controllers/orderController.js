@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { buildOrderBreakdown } = require('../utils/orderFees');
 
 exports.getOrders = async (req, res, next) => {
   try {
@@ -136,7 +137,7 @@ exports.getOrderById = async (req, res, next) => {
 
 exports.createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, shippingCity, shippingProvince } = req.body;
+    const { shippingAddress, shippingCity, shippingProvince, cartItemIds } = req.body;
 
     if (!shippingAddress || !shippingCity || !shippingProvince) {
       return res.status(400).json({ success: false, error: 'Shipping information is required' });
@@ -151,10 +152,23 @@ exports.createOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Cart is empty' });
     }
 
-    let totalPrice = 0;
-    const orderItems = cart.items.map((item) => {
+    let itemsToOrder = cart.items.filter((item) => item.selected);
+
+    if (Array.isArray(cartItemIds) && cartItemIds.length > 0) {
+      const ids = new Set(cartItemIds.map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id)));
+      itemsToOrder = cart.items.filter((item) => ids.has(item.id) && item.selected);
+    }
+
+    if (itemsToOrder.length === 0) {
+      return res.status(400).json({ success: false, error: 'Pilih minimal satu produk untuk checkout' });
+    }
+
+    let subtotal = 0;
+    let itemCount = 0;
+    const orderItems = itemsToOrder.map((item) => {
       const priceAtTime = Number(item.product.price);
-      totalPrice += priceAtTime * item.quantity;
+      subtotal += priceAtTime * item.quantity;
+      itemCount += item.quantity;
       return {
         productId: item.productId,
         quantity: item.quantity,
@@ -162,11 +176,14 @@ exports.createOrder = async (req, res, next) => {
       };
     });
 
+    const breakdown = buildOrderBreakdown(subtotal, itemCount);
+    const checkoutItemIds = itemsToOrder.map((item) => item.id);
+
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
           buyerId: req.user.id,
-          totalPrice,
+          totalPrice: breakdown.totalPrice,
           shippingAddress,
           shippingCity,
           shippingProvince,
@@ -175,7 +192,9 @@ exports.createOrder = async (req, res, next) => {
         include: { items: { include: { product: true } } },
       });
 
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      await tx.cartItem.deleteMany({
+        where: { id: { in: checkoutItemIds }, cartId: cart.id },
+      });
 
       return newOrder;
     });
@@ -191,6 +210,10 @@ exports.createOrder = async (req, res, next) => {
           priceAtTime: Number(i.priceAtTime),
         })),
         totalPrice: Number(order.totalPrice),
+        subtotal: breakdown.subtotal,
+        serviceFee: breakdown.serviceFee,
+        shippingFee: breakdown.shippingFee,
+        itemCount: breakdown.itemCount,
         status: order.status,
         paymentStatus: order.paymentStatus,
       },

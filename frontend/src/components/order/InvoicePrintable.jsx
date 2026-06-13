@@ -1,6 +1,7 @@
 import { Printer } from 'lucide-react';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { getOrderProductTitle } from '../../utils/orderHelpers';
+import { formatPaymentMethod } from '../../utils/paymentMethods';
 
 export default function InvoicePrintable({ order }) {
   if (!order || order.paymentStatus !== 'paid') return null;
@@ -47,7 +48,7 @@ export default function InvoicePrintable({ order }) {
           {order.transaction && (
             <div>
               <p className="font-medium text-heading mb-1">Pembayaran</p>
-              <p className="text-muted">Metode: {order.transaction.paymentMethod}</p>
+              <p className="text-muted">Metode: {formatPaymentMethod(order.transaction.paymentMethod)}</p>
               <p className="text-muted">ID Transaksi: {order.transaction.transactionId}</p>
               <p className="text-muted">Status: {order.transaction.status}</p>
             </div>
