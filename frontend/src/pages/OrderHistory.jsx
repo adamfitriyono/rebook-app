@@ -18,7 +18,8 @@ import {
   canPayOrder,
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_FILTERS } from '../utils/constants';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
 
 export default function OrderHistory() {
   const [orders, setOrders] = useState([]);
@@ -110,7 +111,7 @@ export default function OrderHistory() {
         onCancel={() => setCancelTarget(null)}
       />
 
-      <BackButton fallback="/" className="mb-4" />
+      <Breadcrumb items={homeTrail(CRUMBS.orders)} />
       <h1 className="text-2xl font-bold text-heading mb-6">Riwayat Pesanan</h1>
 
       <div className="flex flex-wrap gap-2 mb-6">

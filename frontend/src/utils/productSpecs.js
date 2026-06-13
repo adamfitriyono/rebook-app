@@ -15,3 +15,13 @@ export function hasProductSpecs(product) {
     || product.heightCm
   );
 }
+
+export function hasShippingSpecs(product) {
+  if (!product) return false;
+  return Boolean(
+    product.weightGram
+    || product.lengthCm
+    || product.widthCm
+    || product.heightCm
+  );
+}

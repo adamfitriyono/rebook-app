@@ -16,11 +16,24 @@ const DOT_STYLES = {
   delivered: 'bg-green-500',
   completed: 'bg-green-500',
   cancelled: 'bg-red-500',
+  open: 'bg-amber-500',
+  in_progress: 'bg-blue-500',
+  resolved: 'bg-green-500',
+  closed: 'bg-gray-500',
 };
 
-export default function StatusBadge({ status }) {
-  const label = ORDER_STATUS_LABELS[status] || status;
-  const style = STATUS_STYLES[status] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+const DISPUTE_STYLES = {
+  open: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
+  in_progress: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+  resolved: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400',
+  closed: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+};
+
+export default function StatusBadge({ status, labels }) {
+  const labelMap = labels || ORDER_STATUS_LABELS;
+  const styleMap = labels ? { ...STATUS_STYLES, ...DISPUTE_STYLES } : STATUS_STYLES;
+  const label = labelMap[status] || status;
+  const style = styleMap[status] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
   const dot = DOT_STYLES[status] || 'bg-gray-400';
 
   return (

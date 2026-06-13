@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, ExternalLink } from 'lucide-react';
+import { Truck, ExternalLink, Printer, Package } from 'lucide-react';
 import Loading from '../../components/common/Loading';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
 import StatusBadge from '../../components/common/StatusBadge';
 import OrderStatusTracker from '../../components/order/OrderStatusTracker';
+import PackingSlipPrintable from '../../components/order/PackingSlipPrintable';
 import { getSellerOrders, updateOrderStatus } from '../../services/orders';
 import { toast } from '../../store/useToastStore';
 import { formatDate } from '../../utils/formatters';
 import { resolveMediaUrl } from '../../utils/media';
 import { getOrderProductTitle, canMarkShipped } from '../../utils/orderHelpers';
-import { Package } from 'lucide-react';
 
 export default function SellerOrders() {
   const [orders, setOrders] = useState([]);
@@ -19,6 +19,7 @@ export default function SellerOrders() {
   const [updatingId, setUpdatingId] = useState(null);
   const [shipTarget, setShipTarget] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState('');
+  const [printOrder, setPrintOrder] = useState(null);
 
   const fetchData = () => {
     setLoading(true);
@@ -59,7 +60,11 @@ export default function SellerOrders() {
       acc.push({
         orderId: item.order.id,
         status: item.order.status,
+        paymentStatus: item.order.paymentStatus,
         trackingNumber: item.order.trackingNumber,
+        shippingAddress: item.order.shippingAddress,
+        shippingCity: item.order.shippingCity,
+        shippingProvince: item.order.shippingProvince,
         buyer: item.order.buyer,
         createdAt: item.order.createdAt,
         items: orders.filter((o) => o.order.id === item.order.id),
@@ -67,6 +72,10 @@ export default function SellerOrders() {
     }
     return acc;
   }, []);
+
+  const canPrintLabel = (order) =>
+    order.paymentStatus === 'paid'
+    && ['paid', 'shipped', 'delivered', 'completed'].includes(order.status);
 
   if (loading) return <Loading />;
 
@@ -96,6 +105,12 @@ export default function SellerOrders() {
         }}
       />
 
+      {printOrder && (
+        <div className="mb-8">
+          <PackingSlipPrintable order={printOrder} onClose={() => setPrintOrder(null)} />
+        </div>
+      )}
+
       <h2 className="text-lg font-bold text-heading mb-4">Pesanan Masuk</h2>
 
       {uniqueOrders.length === 0 ? (
@@ -115,7 +130,7 @@ export default function SellerOrders() {
               <div key={order.orderId} className="surface-card p-4 rounded-2xl">
                 <div className="flex gap-4">
                   <img
-                    src={resolveMediaUrl(thumb, 'https://picsum.photos/80/100')}
+                    src={resolveMediaUrl(thumb, 'https://picsum.photos/80/100', { width: 160 })}
                     alt=""
                     className="w-16 aspect-[3/4] object-cover rounded-lg shrink-0"
                   />
@@ -126,7 +141,7 @@ export default function SellerOrders() {
                           {getOrderProductTitle({ items: order.items })}
                         </p>
                         <p className="text-sm text-subtle mt-0.5">
-                          {order.buyer.fullName} &middot; {formatDate(order.createdAt)}
+                          {order.buyer?.fullName} &middot; {formatDate(order.createdAt)}
                         </p>
                       </div>
                       <StatusBadge status={order.status} />
@@ -153,6 +168,16 @@ export default function SellerOrders() {
                         <ExternalLink size={14} />
                         Detail
                       </Link>
+                      {canPrintLabel(order) && (
+                        <button
+                          type="button"
+                          onClick={() => setPrintOrder(order)}
+                          className="btn-outline btn-sm"
+                        >
+                          <Printer size={14} />
+                          Cetak Label
+                        </button>
+                      )}
                       {canMarkShipped(order) && (
                         <button
                           type="button"

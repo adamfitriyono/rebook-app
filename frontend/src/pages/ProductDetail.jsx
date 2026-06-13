@@ -14,11 +14,11 @@ import ProductImageGallery from '../components/product/ProductImageGallery';
 import BuyerProtectionBadge from '../components/product/BuyerProtectionBadge';
 import { resolveAvatarUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { productTrail } from '../utils/breadcrumbs';
 import VerifiedSellerBadge from '../components/product/VerifiedSellerBadge';
-import ProductSpecsTable from '../components/product/ProductSpecsTable';
+import FollowStoreButton from '../components/seller/FollowStoreButton';
 import RelatedProducts from '../components/product/RelatedProducts';
-import { hasProductSpecs } from '../utils/productSpecs';
 
 const DESCRIPTION_LIMIT = 180;
 
@@ -183,7 +183,7 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <BackButton fallback="/catalog" className="mb-4" />
+      <Breadcrumb items={productTrail(product)} />
       <div className="grid md:grid-cols-2 gap-8 items-start surface-card p-6">
         <ProductImageGallery
           images={product.images}
@@ -233,15 +233,6 @@ export default function ProductDetail() {
             <p className="text-xs text-subtle mt-2">Stok: {product.stock}</p>
           </div>
 
-          {hasProductSpecs(product) && (
-            <div>
-              <h2 className="inline-block text-primary font-semibold border-b-2 border-primary pb-0.5 mb-3">
-                Spesifikasi
-              </h2>
-              <ProductSpecsTable product={product} />
-            </div>
-          )}
-
           <BuyerProtectionBadge />
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -260,13 +251,16 @@ export default function ProductDetail() {
               )}
             </div>
             {product.seller?.id && (
-              <Link
-                to={`/toko/${product.seller.id}`}
-                className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary/5"
-              >
-                <Store size={16} />
-                Kunjungi
-              </Link>
+              <>
+                <FollowStoreButton sellerId={product.seller.id} />
+                <Link
+                  to={`/toko/${product.seller.id}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary/5"
+                >
+                  <Store size={16} />
+                  Kunjungi
+                </Link>
+              </>
             )}
           </div>
 

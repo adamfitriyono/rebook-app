@@ -1,5 +1,6 @@
 import { ShieldCheck, RotateCcw, PackageCheck, Headphones } from 'lucide-react';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
 
 const BENEFITS = [
   {
@@ -31,7 +32,7 @@ const BENEFITS = [
 export default function BuyerProtection() {
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <BackButton fallback="/" className="mb-4" />
+      <Breadcrumb items={homeTrail(CRUMBS.buyerProtection)} />
 
       <div className="surface-card p-6 md:p-8 max-w-2xl mx-auto">
         <div className="flex items-center gap-4 mb-6">

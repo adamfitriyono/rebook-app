@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useNavigate, Link } from 'react-router-dom';
 import Loading from '../components/common/Loading';
-import BackButton from '../components/common/BackButton';
-import AddressAutocomplete from '../components/common/AddressAutocomplete';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import CheckoutOrderSummary from '../components/checkout/CheckoutOrderSummary';
+import SavedAddressPicker from '../components/checkout/SavedAddressPicker';
+import { emptyAddressForm, isAddressFormValid } from '../components/profile/SavedAddressForm';
 import { getCart } from '../services/cart';
+import { getSavedAddresses } from '../services/addresses';
 import { createOrder } from '../services/orders';
 import { processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
@@ -15,17 +17,42 @@ import { getPublicFees } from '../services/settings';
 import { resolveMediaUrl } from '../utils/media';
 import { useCartStore } from '../store/useAuthStore';
 
+function resolveShippingPayload(selectedId, savedAddresses, newAddress) {
+  if (selectedId && selectedId !== 'new') {
+    const addr = savedAddresses.find((a) => a.id === selectedId);
+    if (addr) {
+      return {
+        shippingAddress: addr.address,
+        shippingCity: addr.city,
+        shippingProvince: addr.province,
+      };
+    }
+  }
+
+  if (isAddressFormValid(newAddress)) {
+    return {
+      shippingAddress: newAddress.address.trim(),
+      shippingCity: newAddress.city.trim(),
+      shippingProvince: newAddress.province.trim(),
+    };
+  }
+
+  return null;
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const fetchCart = useCartStore((s) => s.fetchCart);
   const [cart, setCart] = useState(null);
   const [loadingCart, setLoadingCart] = useState(true);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentError, setPaymentError] = useState('');
   const [fees, setFees] = useState(DEFAULT_FEES);
-  const { register, handleSubmit, setValue, watch, formState: { errors, isValid } } = useForm({ mode: 'onChange' });
-  const shippingAddress = watch('shippingAddress') || '';
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [newAddress, setNewAddress] = useState(emptyAddressForm());
 
   useEffect(() => {
     getPublicFees()
@@ -47,6 +74,22 @@ export default function Checkout() {
       .finally(() => setLoadingCart(false));
   }, [navigate]);
 
+  useEffect(() => {
+    getSavedAddresses()
+      .then(({ data }) => {
+        const rows = data.data || [];
+        setSavedAddresses(rows);
+        if (rows.length > 0) {
+          const defaultAddr = rows.find((a) => a.isDefault) || rows[0];
+          setSelectedAddressId(defaultAddr.id);
+        } else {
+          setSelectedAddressId('new');
+        }
+      })
+      .catch(() => setSelectedAddressId('new'))
+      .finally(() => setLoadingAddresses(false));
+  }, []);
+
   const breakdown = useMemo(() => {
     if (!cart?.selectedItems?.length) return null;
     const groups = groupCartItemsBySeller(cart.selectedItems);
@@ -58,17 +101,30 @@ export default function Checkout() {
     return groupCartItemsBySeller(cart.selectedItems);
   }, [cart]);
 
-  const onSubmit = async (formData) => {
+  const shippingReady = useMemo(
+    () => Boolean(resolveShippingPayload(selectedAddressId, savedAddresses, newAddress)),
+    [selectedAddressId, savedAddresses, newAddress],
+  );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (!paymentMethod) {
       setPaymentError('Pilih metode pembayaran');
       return;
     }
     setPaymentError('');
 
+    const shipping = resolveShippingPayload(selectedAddressId, savedAddresses, newAddress);
+    if (!shipping) {
+      toast.error('Lengkapi alamat pengiriman');
+      return;
+    }
+
     try {
       setLoading(true);
       const cartItemIds = cart.selectedItems.map((item) => item.id);
-      const { data: orderData } = await createOrder({ ...formData, cartItemIds });
+      const { data: orderData } = await createOrder({ ...shipping, cartItemIds });
       const { checkoutGroupId, grandTotal } = orderData.data;
 
       await processCheckoutPayment({ checkoutGroupId, paymentMethod });
@@ -85,57 +141,30 @@ export default function Checkout() {
     }
   };
 
-  if (loadingCart || !cart || !breakdown) return <Loading />;
+  if (loadingCart || loadingAddresses || !cart || !breakdown) return <Loading />;
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <BackButton to="/cart" label="Keranjang" className="mb-4" />
+      <Breadcrumb items={homeTrail(CRUMBS.books, CRUMBS.cart, CRUMBS.checkout)} />
       <h1 className="text-2xl font-bold text-heading mb-6">Checkout</h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid lg:grid-cols-3 gap-6">
+      <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <div className="surface-card p-6 space-y-4">
-            <h2 className="font-bold text-heading">Alamat Pengiriman</h2>
-            <div>
-              <label className="block text-sm font-medium mb-1">Alamat Pengiriman</label>
-              <input type="hidden" {...register('shippingAddress', { required: 'Alamat wajib diisi' })} />
-              <AddressAutocomplete
-                name="shippingAddressDisplay"
-                value={shippingAddress}
-                onChange={(text) => setValue('shippingAddress', text, { shouldValidate: true })}
-                onSelect={(item) => {
-                  setValue('shippingAddress', item.addressLine || item.label, { shouldValidate: true });
-                  if (item.city) setValue('shippingCity', item.city, { shouldValidate: true });
-                  if (item.province) setValue('shippingProvince', item.province, { shouldValidate: true });
-                }}
-                placeholder="Ketik nama jalan, kelurahan, atau landmark..."
-                error={errors.shippingAddress?.message}
-              />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-bold text-heading">Alamat Pengiriman</h2>
+              <Link to="/profile" className="text-sm text-primary hover:underline">
+                Kelola alamat
+              </Link>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Kota</label>
-                <input
-                  {...register('shippingCity', { required: 'Kota wajib diisi' })}
-                  className="input-field"
-                  placeholder="Semarang"
-                />
-                {errors.shippingCity && (
-                  <p className="text-red-500 text-sm">{errors.shippingCity.message}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Provinsi</label>
-                <input
-                  {...register('shippingProvince', { required: 'Provinsi wajib diisi' })}
-                  className="input-field"
-                  placeholder="Jawa Tengah"
-                />
-                {errors.shippingProvince && (
-                  <p className="text-red-500 text-sm">{errors.shippingProvince.message}</p>
-                )}
-              </div>
-            </div>
+            <SavedAddressPicker
+              addresses={savedAddresses}
+              selectedId={selectedAddressId}
+              onSelectSaved={(addr) => setSelectedAddressId(addr.id)}
+              onSelectNew={() => setSelectedAddressId('new')}
+              newAddressValues={newAddress}
+              onNewAddressChange={setNewAddress}
+            />
           </div>
 
           <div className="surface-card p-6">
@@ -180,7 +209,7 @@ export default function Checkout() {
           <CheckoutOrderSummary
             breakdown={breakdown}
             loading={loading}
-            disabled={!isValid || !paymentMethod}
+            disabled={!shippingReady || !paymentMethod}
           />
         </div>
       </form>

@@ -3,6 +3,7 @@ import { getProfile, login as loginApi, register as registerApi } from '../servi
 import { getCart } from '../services/cart';
 import { impersonateUser as impersonateUserApi } from '../services/admin';
 import { useWishlistStore } from './useWishlistStore';
+import { useSellerFollowStore } from './useSellerFollowStore';
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -35,6 +36,7 @@ export const useAuthStore = create((set) => ({
     sessionStorage.removeItem('adminToken');
     set({ user: data.user, impersonating: false });
     useWishlistStore.getState().fetchIds();
+    useSellerFollowStore.getState().fetchIds();
     return data;
   },
 
@@ -48,6 +50,7 @@ export const useAuthStore = create((set) => ({
     sessionStorage.removeItem('adminToken');
     set({ user: null, impersonating: false });
     useWishlistStore.getState().clear();
+    useSellerFollowStore.getState().clear();
   },
 
   setUser: (user) => set({ user }),

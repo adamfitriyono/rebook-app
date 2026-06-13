@@ -15,12 +15,12 @@ export default function ProductImageGallery({
   soldOut = false,
   productId,
 }) {
-  const urls = (images?.length ? images : [null]).map((img, index) =>
-    resolveMediaUrl(img, FALLBACK, { width: index === 0 ? 800 : 120 }),
-  );
+  const rawImages = images?.length ? images : [null];
+  const fullUrls = rawImages.map((img) => resolveMediaUrl(img, FALLBACK, { width: 800 }));
+  const thumbUrls = rawImages.map((img) => resolveMediaUrl(img, FALLBACK, { width: 120 }));
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const safeIndex = Math.min(activeIndex, urls.length - 1);
+  const safeIndex = Math.min(activeIndex, fullUrls.length - 1);
 
   return (
     <div className="w-full self-start md:sticky md:top-24">
@@ -31,7 +31,7 @@ export default function ProductImageGallery({
         aria-label="Perbesar gambar"
       >
         <img
-          src={urls[safeIndex]}
+          src={fullUrls[safeIndex]}
           alt={alt}
           loading="eager"
           decoding="async"
@@ -51,11 +51,11 @@ export default function ProductImageGallery({
         </span>
       </button>
 
-      {urls.length > 1 && (
+      {fullUrls.length > 1 && (
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-          {urls.map((url, index) => (
+          {thumbUrls.map((url, index) => (
             <button
-              key={`${url}-${index}`}
+              key={`${rawImages[index]}-${index}`}
               type="button"
               onClick={() => setActiveIndex(index)}
               className={`shrink-0 w-14 aspect-[3/4] rounded-lg overflow-hidden border-2 transition-colors ${
@@ -73,7 +73,7 @@ export default function ProductImageGallery({
 
       <ImageLightbox
         open={lightboxOpen}
-        images={urls}
+        images={fullUrls}
         index={safeIndex}
         onClose={() => setLightboxOpen(false)}
         onChangeIndex={setActiveIndex}

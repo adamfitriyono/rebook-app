@@ -4,9 +4,11 @@ import { Star } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import Loading from '../components/common/Loading';
 import VerifiedSellerBadge from '../components/product/VerifiedSellerBadge';
+import FollowStoreButton from '../components/seller/FollowStoreButton';
 import { getSellerProfile, getSellerProducts } from '../services/sellers';
 import { resolveAvatarUrl } from '../utils/media';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { sellerStoreTrail } from '../utils/breadcrumbs';
 
 const STATUS_TABS = [
   { key: 'all', label: 'Semua' },
@@ -57,15 +59,15 @@ export default function SellerStore() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <BackButton fallback="/catalog" className="mb-4" />
+      <Breadcrumb items={sellerStoreTrail(profile.fullName)} />
       <div className="surface-card p-6 mb-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <img
             src={resolveAvatarUrl(profile.profileImage)}
             alt={profile.fullName}
             className="w-16 h-16 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
           />
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold text-heading inline-flex items-center gap-2 flex-wrap">
               {profile.fullName}
               <VerifiedSellerBadge verified={profile.verified} />
@@ -81,6 +83,7 @@ export default function SellerStore() {
               {profile.totalProducts} produk · {profile.totalSold} terjual
             </p>
           </div>
+          <FollowStoreButton sellerId={profile.id} />
         </div>
       </div>
 

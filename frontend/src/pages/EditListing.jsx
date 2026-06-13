@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
+import { X } from 'lucide-react';
 import Loading from '../components/common/Loading';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
 import { getProductById, updateProduct } from '../services/products';
 import { useAuthStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
 import useCategories from '../hooks/useCategories';
-import ImageFilePicker from '../components/product/ImageFilePicker';
+import ImageFilePicker, { MAX_LISTING_IMAGES } from '../components/product/ImageFilePicker';
 import ListingFormFields from '../components/product/ListingFormFields';
 import { resolveMediaUrl } from '../utils/media';
 
@@ -60,11 +62,25 @@ export default function EditListing() {
       .finally(() => setLoading(false));
   }, [id, user, authLoading, navigate, reset]);
 
+  const removeCurrentImage = (img) => {
+    setCurrentImages((prev) => prev.filter((url) => url !== img));
+  };
+
   const onSubmit = async (data) => {
+    if (currentImages.length + images.length === 0) {
+      toast.error('Produk harus memiliki minimal 1 foto');
+      return;
+    }
+    if (currentImages.length + images.length > MAX_LISTING_IMAGES) {
+      toast.error(`Maksimal ${MAX_LISTING_IMAGES} foto`);
+      return;
+    }
+
     try {
       setSaving(true);
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => formData.append(key, value ?? ''));
+      formData.append('existingImages', JSON.stringify(currentImages));
       images.forEach((file) => formData.append('images', file));
 
       await updateProduct(id, formData);
@@ -82,7 +98,7 @@ export default function EditListing() {
   return (
     <div className="max-w-content mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <BackButton to="/seller/listings" label="Listing Saya" />
+        <Breadcrumb items={homeTrail(CRUMBS.sellerCentre, CRUMBS.sellerListings, { label: 'Edit Listing' })} />
         <h1 className="text-2xl font-bold text-heading">Edit Listing</h1>
       </div>
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl surface-card p-6 space-y-6">
@@ -97,7 +113,21 @@ export default function EditListing() {
             <label className="block text-sm font-medium mb-2">Foto Saat Ini</label>
             <div className="flex gap-2 flex-wrap">
               {currentImages.map((img) => (
-                <img key={img} src={resolveMediaUrl(img)} alt="" className="w-20 aspect-[3/4] object-cover rounded border border-gray-200 dark:border-gray-600" />
+                <div key={img} className="relative">
+                  <img
+                    src={resolveMediaUrl(img, null, { width: 160 })}
+                    alt=""
+                    className="w-20 aspect-[3/4] object-cover rounded border border-gray-200 dark:border-gray-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeCurrentImage(img)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                    aria-label="Hapus foto"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -106,8 +136,8 @@ export default function EditListing() {
           files={images}
           onChange={setImages}
           existingCount={currentImages.length}
-          label="Tambah / Ganti Foto (opsional)"
-          hint="Upload foto baru akan mengganti semua foto lama saat disimpan"
+          label="Tambah Foto (opsional)"
+          hint="Foto baru ditambahkan setelah foto yang dipertahankan. Maksimal 5 foto total."
         />
         <button
           type="submit"

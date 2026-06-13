@@ -230,8 +230,32 @@ exports.updateProduct = async (req, res, next) => {
       updateData.heightCm = parsed;
     }
 
-    if (req.files?.length > 0) {
-      updateData.images = await uploadImages(req.files, 'products');
+    const MAX_IMAGES = 5;
+    if (req.body.existingImages !== undefined || req.files?.length > 0) {
+      let kept = product.images;
+      if (req.body.existingImages !== undefined) {
+        try {
+          const parsed = JSON.parse(req.body.existingImages);
+          if (!Array.isArray(parsed)) {
+            return res.status(400).json({ success: false, error: 'existingImages tidak valid' });
+          }
+          kept = parsed.filter((url) => typeof url === 'string' && url.trim());
+        } catch {
+          return res.status(400).json({ success: false, error: 'existingImages tidak valid' });
+        }
+      }
+
+      const newUploads = req.files?.length ? await uploadImages(req.files, 'products') : [];
+      const merged = [...kept, ...newUploads].slice(0, MAX_IMAGES);
+
+      if (merged.length === 0) {
+        return res.status(400).json({ success: false, error: 'Produk harus memiliki minimal 1 foto' });
+      }
+      if (kept.length + newUploads.length > MAX_IMAGES) {
+        return res.status(400).json({ success: false, error: `Maksimal ${MAX_IMAGES} foto` });
+      }
+
+      updateData.images = merged;
     }
 
     const updated = await prisma.product.update({ where: { id }, data: updateData });

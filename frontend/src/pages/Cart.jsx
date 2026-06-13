@@ -9,7 +9,8 @@ import { toast } from '../store/useToastStore';
 import { formatPrice } from '../utils/formatters';
 import { resolveMediaUrl } from '../utils/media';
 import { groupCartItemsBySeller } from '../utils/orderFees';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ export default function Cart() {
   if (!cart?.items?.length) {
     return (
       <div className="max-w-content mx-auto px-4 py-8">
-        <BackButton fallback="/catalog" className="mb-4" />
+        <Breadcrumb items={homeTrail(CRUMBS.books, CRUMBS.cart)} />
         <EmptyState
           icon={ShoppingCart}
           title="Keranjang Kosong"
@@ -112,7 +113,7 @@ export default function Cart() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <BackButton fallback="/catalog" className="mb-4" />
+      <Breadcrumb items={homeTrail(CRUMBS.books, CRUMBS.cart)} />
       <h1 className="text-2xl font-bold text-heading mb-6">Keranjang Belanja</h1>
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-3">

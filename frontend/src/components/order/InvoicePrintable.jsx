@@ -2,6 +2,8 @@ import { Printer } from 'lucide-react';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { getOrderProductTitle } from '../../utils/orderHelpers';
 import { formatPaymentMethod } from '../../utils/paymentMethods';
+import ProductSpecsTable from '../product/ProductSpecsTable';
+import { hasShippingSpecs } from '../../utils/productSpecs';
 
 export default function InvoicePrintable({ order }) {
   if (!order || order.paymentStatus !== 'paid') return null;
@@ -77,6 +79,24 @@ export default function InvoicePrintable({ order }) {
             ))}
           </tbody>
         </table>
+
+        {order.items.some((item) => hasShippingSpecs(item.product)) && (
+          <div className="mb-6">
+            <p className="text-sm font-medium text-heading mb-2">Spesifikasi Paket</p>
+            <div className="space-y-3">
+              {order.items.map((item) => (
+                hasShippingSpecs(item.product) && (
+                  <div key={`spec-${item.product.id}`}>
+                    {order.items.length > 1 && (
+                      <p className="text-xs font-medium text-subtle mb-1">{item.product.title}</p>
+                    )}
+                    <ProductSpecsTable product={item.product} variant="shipping" />
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end">
           <div className="text-right">

@@ -1,10 +1,13 @@
-import BackButton from '../common/BackButton';
+import Breadcrumb from '../common/Breadcrumb';
+import { adminTrail } from '../../utils/breadcrumbs';
 import { ADMIN_NAV } from './adminNav';
 
 export default function AdminLayout({ activeTab, onTabChange, children }) {
+  const activeLabel = ADMIN_NAV.find((item) => item.key === activeTab)?.label;
+
   return (
     <div className="max-w-content mx-auto px-4 py-6">
-      <BackButton fallback="/" className="mb-4" />
+      <Breadcrumb items={adminTrail(activeLabel)} />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-heading">Admin Panel</h1>
         <p className="text-sm text-subtle mt-1">Pusat kendali platform ReBook</p>

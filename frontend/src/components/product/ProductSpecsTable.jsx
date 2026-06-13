@@ -1,13 +1,19 @@
 import { formatPackageDimensions } from '../../utils/productSpecs';
 
-export default function ProductSpecsTable({ product }) {
+export default function ProductSpecsTable({ product, variant = 'full' }) {
   const dimensions = formatPackageDimensions(product);
-  const rows = [
-    product.isbn && { label: 'ISBN', value: product.isbn },
+  const shippingRows = [
     product.weightGram && { label: 'Berat paket', value: `${product.weightGram} gram` },
     dimensions && { label: 'Dimensi paket', value: dimensions },
-    product.category && { label: 'Kategori', value: product.category },
   ].filter(Boolean);
+
+  const rows = variant === 'shipping'
+    ? shippingRows
+    : [
+        product.isbn && { label: 'ISBN', value: product.isbn },
+        ...shippingRows,
+        product.category && { label: 'Kategori', value: product.category },
+      ].filter(Boolean);
 
   if (!rows.length) return null;
 

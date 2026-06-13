@@ -3,8 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import ProductGrid from '../components/product/ProductGrid';
 import CategoryFilter from '../components/product/CategoryFilter';
 import Loading from '../components/common/Loading';
+import Breadcrumb from '../components/common/Breadcrumb';
 import { getProducts } from '../services/products';
 import { CONDITION_LABELS } from '../utils/constants';
+import { catalogTrail } from '../utils/breadcrumbs';
 
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,6 +54,7 @@ export default function Catalog() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-6">
+      <Breadcrumb items={catalogTrail({ category, search })} />
       <h1 className="text-2xl font-bold text-heading mb-6">Katalog Buku</h1>
 
       <div className="grid lg:grid-cols-4 gap-6">

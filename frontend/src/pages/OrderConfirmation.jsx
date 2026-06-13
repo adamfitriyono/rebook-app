@@ -6,7 +6,8 @@ import { getOrderById, getOrdersByGroup } from '../services/orders';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { getOrderProductTitle } from '../utils/orderHelpers';
 import { formatPaymentMethod } from '../utils/paymentMethods';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { ordersTrail } from '../utils/breadcrumbs';
 
 export default function OrderConfirmation() {
   const { id, checkoutGroupId } = useParams();
@@ -37,7 +38,7 @@ export default function OrderConfirmation() {
 
     return (
       <div className="max-w-content mx-auto px-4 py-16">
-        <BackButton to="/orders" label="Riwayat Pesanan" className="mb-6" />
+        <Breadcrumb items={ordersTrail('Konfirmasi Pembayaran')} className="mb-6" />
         <div className="text-center mb-8">
           <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-heading mb-2">Pembayaran Berhasil!</h1>
@@ -93,7 +94,7 @@ export default function OrderConfirmation() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-16 text-center">
-      <BackButton to="/orders" label="Riwayat Pesanan" className="mb-6 mx-auto justify-center" />
+      <Breadcrumb items={ordersTrail('Konfirmasi Pembayaran')} className="mb-6" />
       <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
       <h1 className="text-2xl font-bold text-heading mb-2">Pembayaran Berhasil!</h1>
       <p className="text-muted mb-2">{getOrderProductTitle(order)}</p>

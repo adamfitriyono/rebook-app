@@ -38,6 +38,9 @@ model User {
   sellerDisputes       Dispute[]        @relation("SellerDisputes")
   adminAuditLogs       AdminAuditLog[]  @relation("AdminAuditLogs")
   wishlistItems        WishlistItem[]
+  sellerFollows        SellerFollow[]   @relation("UserFollowing")
+  storeFollowers       SellerFollow[]   @relation("SellerFollowers")
+  savedAddresses       SavedAddress[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -311,5 +314,36 @@ model WishlistItem {
   createdAt DateTime @default(now())
 
   @@unique([userId, productId])
+  @@index([userId])
+}
+
+model SellerFollow {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation("UserFollowing", fields: [userId], references: [id], onDelete: Cascade)
+  sellerId  Int
+  seller    User     @relation("SellerFollowers", fields: [sellerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, sellerId])
+  @@index([userId])
+  @@index([sellerId])
+}
+
+model SavedAddress {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label         String?
+  recipientName String?
+  phoneNumber   String?
+  address       String
+  city          String
+  province      String
+  postalCode    String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@index([userId])
 }

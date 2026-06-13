@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Search, ShoppingBag, Moon, Sun, MessageCircle, Heart } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, ShoppingBag, Moon, Sun, MessageCircle, Heart, LifeBuoy, UserPlus } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useAuthStore';
 import { useThemeStore } from '../../store/useThemeStore';
@@ -80,8 +80,14 @@ export default function Navbar() {
               <Link to="/wishlist" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
                 <Heart size={18} /> Wishlist
               </Link>
+              <Link to="/followed-stores" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
+                <UserPlus size={18} /> Toko Diikuti
+              </Link>
               <Link to="/orders" onClick={closeMobile} className="btn-ghost">
                 Pesanan
+              </Link>
+              <Link to="/disputes" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
+                <LifeBuoy size={18} /> Dispute
               </Link>
               <Link to="/messages" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
                 <MessageCircle size={18} /> Pesan
@@ -188,8 +194,14 @@ export default function Navbar() {
                         <Link to="/wishlist" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
                           Wishlist
                         </Link>
+                        <Link to="/followed-stores" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
+                          Toko Diikuti
+                        </Link>
                         <Link to="/orders" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
                           Pesanan
+                        </Link>
+                        <Link to="/disputes" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
+                          Dispute
                         </Link>
                         <Link to="/messages" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm flex items-center justify-between">
                           Pesan

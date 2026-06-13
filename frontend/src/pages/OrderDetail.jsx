@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link, useParams, useLocation } from 'react-router-dom';
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { CreditCard, Package, MapPin, Truck } from 'lucide-react';
 import Loading from '../components/common/Loading';
-import BackButton from '../components/common/BackButton';
+import Breadcrumb from '../components/common/Breadcrumb';
+import { ordersTrail } from '../utils/breadcrumbs';
 import ConfirmModal from '../components/common/ConfirmModal';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import InvoicePrintable from '../components/order/InvoicePrintable';
@@ -23,6 +24,7 @@ import { createDispute } from '../services/disputes';
 export default function OrderDetail() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -108,6 +110,7 @@ export default function OrderDetail() {
       toast.success('Dispute diajukan. Tim support akan meninjau.');
       setDisputeSubject('');
       setDisputeDescription('');
+      navigate('/disputes');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Gagal mengajukan dispute');
     } finally {
@@ -137,7 +140,7 @@ export default function OrderDetail() {
         onCancel={() => setShowCancelModal(false)}
       />
 
-      <BackButton to="/orders" label="Riwayat Pesanan" className="mb-4" />
+      <Breadcrumb items={ordersTrail(`Pesanan #${order.id}`)} />
 
       <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div>

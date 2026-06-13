@@ -20,3 +20,10 @@ export const ORDER_STATUS_FILTERS = [
   { value: 'shipped', label: 'Dikirim' },
   { value: 'delivered', label: 'Selesai' },
 ];
+
+export const DISPUTE_STATUS_LABELS = {
+  open: 'Terbuka',
+  in_progress: 'Diproses',
+  resolved: 'Selesai',
+  closed: 'Ditutup',
+};

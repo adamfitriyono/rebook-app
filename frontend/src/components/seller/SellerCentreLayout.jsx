@@ -10,7 +10,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
-import BackButton from '../common/BackButton';
+import Breadcrumb from '../common/Breadcrumb';
+import { sellerCentreTrail } from '../../utils/breadcrumbs';
 
 const NAV_ITEMS = [
   { to: '/seller', label: 'Ringkasan', icon: LayoutDashboard, end: true },
@@ -73,15 +74,10 @@ function SidebarNav({ onNavigate }) {
 
 export default function SellerCentreLayout() {
   const location = useLocation();
-  const isOverview = location.pathname === '/seller' || location.pathname === '/seller/';
 
   return (
     <div className="max-w-content mx-auto px-4 py-6">
-      {isOverview ? (
-        <BackButton fallback="/" label="Beranda" className="mb-4" />
-      ) : (
-        <BackButton to="/seller" label="Ringkasan" className="mb-4" />
-      )}
+      <Breadcrumb items={sellerCentreTrail(location.pathname)} />
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-heading">Seller Centre</h1>
         <p className="text-sm text-subtle mt-1">Kelola toko, pesanan, dan listing Anda</p>

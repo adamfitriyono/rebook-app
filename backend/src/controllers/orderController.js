@@ -171,7 +171,19 @@ exports.getOrderById = async (req, res, next) => {
       include: {
         items: {
           include: {
-            product: { select: { id: true, title: true, price: true, images: true, sellerId: true } },
+            product: {
+              select: {
+                id: true,
+                title: true,
+                price: true,
+                images: true,
+                sellerId: true,
+                weightGram: true,
+                lengthCm: true,
+                widthCm: true,
+                heightCm: true,
+              },
+            },
           },
         },
         transaction: true,
@@ -202,6 +214,10 @@ exports.getOrderById = async (req, res, next) => {
             title: i.product.title,
             price: Number(i.product.price),
             images: i.product.images,
+            weightGram: i.product.weightGram,
+            lengthCm: i.product.lengthCm != null ? Number(i.product.lengthCm) : null,
+            widthCm: i.product.widthCm != null ? Number(i.product.widthCm) : null,
+            heightCm: i.product.heightCm != null ? Number(i.product.heightCm) : null,
           },
           quantity: i.quantity,
           priceAtTime: Number(i.priceAtTime),
@@ -213,7 +229,9 @@ exports.getOrderById = async (req, res, next) => {
         shippingCity: order.shippingCity,
         shippingProvince: order.shippingProvince,
         trackingNumber: order.trackingNumber,
-        buyer: isBuyer || isAdmin ? order.buyer : undefined,
+        buyer: isBuyer || isAdmin || isSeller
+          ? { id: order.buyer.id, fullName: order.buyer.fullName, phoneNumber: order.buyer.phoneNumber }
+          : undefined,
         transaction: order.transaction
           ? {
               id: order.transaction.id,
@@ -449,17 +467,49 @@ exports.getSellerOrders = async (req, res, next) => {
       where: { productId: { in: productIds } },
       include: {
         order: {
-          include: {
+          select: {
+            id: true,
+            status: true,
+            paymentStatus: true,
+            trackingNumber: true,
+            createdAt: true,
+            shippingAddress: true,
+            shippingCity: true,
+            shippingProvince: true,
             buyer: { select: { fullName: true, phoneNumber: true } },
-            transaction: true,
           },
         },
-        product: { select: { id: true, title: true } },
+        product: {
+          select: {
+            id: true,
+            title: true,
+            images: true,
+            weightGram: true,
+            lengthCm: true,
+            widthCm: true,
+            heightCm: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ success: true, data: orderItems });
+    const data = orderItems.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      product: {
+        id: item.product.id,
+        title: item.product.title,
+        images: item.product.images,
+        weightGram: item.product.weightGram,
+        lengthCm: item.product.lengthCm != null ? Number(item.product.lengthCm) : null,
+        widthCm: item.product.widthCm != null ? Number(item.product.widthCm) : null,
+        heightCm: item.product.heightCm != null ? Number(item.product.heightCm) : null,
+      },
+      order: item.order,
+    }));
+
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
