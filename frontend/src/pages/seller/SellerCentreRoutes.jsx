@@ -9,7 +9,7 @@ import SellBook from '../SellBook';
 
 function SellerCentreRoutes() {
   return (
-    <ProtectedRoute roles={['seller', 'admin']}>
+    <ProtectedRoute roles={['seller']}>
       <Routes>
         <Route element={<SellerCentreLayout />}>
           <Route index element={<SellerOverview />} />

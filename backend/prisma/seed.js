@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
-const { buildOrderBreakdown } = require('../src/utils/orderFees');
+const { buildOrderBreakdownSync } = require('../src/utils/orderFees');
 
 const prisma = new PrismaClient();
 
@@ -119,7 +119,7 @@ async function main() {
     });
 
     if (hasCompletedSale) {
-      const breakdown = buildOrderBreakdown(price, 1);
+      const breakdown = buildOrderBreakdownSync(price, 1);
       const order = await prisma.order.create({
         data: {
           buyerId: buyer.id,

@@ -10,7 +10,8 @@ import { getCart } from '../services/cart';
 import { createOrder } from '../services/orders';
 import { processPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
-import { buildOrderBreakdown } from '../utils/orderFees';
+import { buildOrderBreakdown, DEFAULT_FEES } from '../utils/orderFees';
+import { getPublicFees } from '../services/settings';
 import { resolveMediaUrl } from '../utils/media';
 
 export default function Checkout() {
@@ -20,8 +21,15 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [paymentError, setPaymentError] = useState('');
+  const [fees, setFees] = useState(DEFAULT_FEES);
   const { register, handleSubmit, setValue, watch, formState: { errors, isValid } } = useForm({ mode: 'onChange' });
   const shippingAddress = watch('shippingAddress') || '';
+
+  useEffect(() => {
+    getPublicFees()
+      .then(({ data }) => setFees(data.data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     getCart()
@@ -44,8 +52,8 @@ export default function Checkout() {
       0,
     );
     const itemCount = cart.selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-    return buildOrderBreakdown(subtotal, itemCount);
-  }, [cart]);
+    return buildOrderBreakdown(subtotal, itemCount, fees);
+  }, [cart, fees]);
 
   const onSubmit = async (formData) => {
     if (!paymentMethod) {

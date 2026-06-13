@@ -81,6 +81,7 @@ exports.getProductById = async (req, res, next) => {
       include: {
         seller: { select: { id: true, fullName: true, phoneNumber: true, profileImage: true, city: true } },
         reviews: {
+          where: { hidden: false },
           include: { author: { select: { id: true, fullName: true } } },
           orderBy: { createdAt: 'desc' },
         },

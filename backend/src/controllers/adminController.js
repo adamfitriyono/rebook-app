@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { logAdminAction } = require('../utils/adminAudit');
 
 exports.getStats = async (req, res, next) => {
   try {
@@ -81,6 +82,12 @@ exports.patchUserRole = async (req, res, next) => {
       select: { id: true, email: true, fullName: true, role: true },
     });
 
+    await logAdminAction(req.user.id, 'user.role_change', {
+      entityType: 'user',
+      entityId: id,
+      details: { role },
+    });
+
     res.json({ success: true, message: 'User role updated', data: user });
   } catch (err) {
     if (err.code === 'P2025') {
@@ -160,6 +167,8 @@ exports.deleteProduct = async (req, res, next) => {
     }
 
     await prisma.product.delete({ where: { id } });
+
+    await logAdminAction(req.user.id, 'product.delete', { entityType: 'product', entityId: id });
 
     res.json({ success: true, message: 'Product deleted successfully' });
   } catch (err) {

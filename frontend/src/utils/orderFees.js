@@ -1,16 +1,15 @@
-export const SERVICE_FEE = 2500;
-export const SHIPPING_FEE = 12000;
+export const DEFAULT_FEES = { serviceFee: 2500, shippingFee: 12000 };
 
-export function computeOrderTotal(subtotal) {
-  return subtotal + SERVICE_FEE + SHIPPING_FEE;
+export function computeOrderTotal(subtotal, fees = DEFAULT_FEES) {
+  return subtotal + fees.serviceFee + fees.shippingFee;
 }
 
-export function buildOrderBreakdown(subtotal, itemCount) {
+export function buildOrderBreakdown(subtotal, itemCount, fees = DEFAULT_FEES) {
   return {
     subtotal,
-    serviceFee: SERVICE_FEE,
-    shippingFee: SHIPPING_FEE,
+    serviceFee: fees.serviceFee,
+    shippingFee: fees.shippingFee,
     itemCount,
-    totalPrice: computeOrderTotal(subtotal),
+    totalPrice: computeOrderTotal(subtotal, fees),
   };
 }

@@ -29,6 +29,10 @@ model User {
   buyerConversations   Conversation[]   @relation("BuyerConversations")
   sellerConversations  Conversation[]   @relation("SellerConversations")
   sentMessages         Message[]        @relation("SentMessages")
+  reviewReports        ReviewReport[]   @relation("ReviewReports")
+  buyerDisputes        Dispute[]        @relation("BuyerDisputes")
+  sellerDisputes       Dispute[]        @relation("SellerDisputes")
+  adminAuditLogs       AdminAuditLog[]  @relation("AdminAuditLogs")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -123,6 +127,7 @@ model Order {
   trackingNumber   String?
 
   transaction Transaction?
+  disputes    Dispute[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -157,6 +162,9 @@ model Review {
 
   rating  Int
   comment String? @db.Text
+  hidden  Boolean @default(false)
+
+  reports ReviewReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,4 +220,76 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId])
+}
+
+model PromoBanner {
+  id         Int      @id @default(autoincrement())
+  title      String
+  subtitle   String?
+  cta        String   @default("Lihat")
+  link       String   @default("/catalog")
+  imageUrl   String?
+  bgGradient String?
+  sortOrder  Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ReviewReport {
+  id         Int      @id @default(autoincrement())
+  reviewId   Int
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporterId Int
+  reporter   User     @relation("ReviewReports", fields: [reporterId], references: [id])
+  reason     String
+  status     String   @default("pending")
+  adminNotes String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([reviewId])
+  @@index([status])
+}
+
+model Dispute {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  order       Order    @relation(fields: [orderId], references: [id])
+  buyerId     Int
+  buyer       User     @relation("BuyerDisputes", fields: [buyerId], references: [id])
+  sellerId    Int
+  seller      User     @relation("SellerDisputes", fields: [sellerId], references: [id])
+  subject     String
+  description String   @db.Text
+  status      String   @default("open")
+  adminNotes  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([orderId])
+}
+
+model AdminAuditLog {
+  id         Int      @id @default(autoincrement())
+  adminId    Int
+  admin      User     @relation("AdminAuditLogs", fields: [adminId], references: [id])
+  action     String
+  entityType String?
+  entityId   Int?
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+model PlatformSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  updatedBy Int?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 }

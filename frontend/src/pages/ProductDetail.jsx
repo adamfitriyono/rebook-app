@@ -5,7 +5,7 @@ import Loading from '../components/common/Loading';
 import RatingStars from '../components/product/RatingStars';
 import { getProductById } from '../services/products';
 import { addToCart, clearCart } from '../services/cart';
-import { createReview, getReviewEligibility } from '../services/reviews';
+import { createReview, getReviewEligibility, reportReview } from '../services/reviews';
 import { createConversation } from '../services/chat';
 import { useAuthStore, useCartStore } from '../store/useAuthStore';
 import { toast } from '../store/useToastStore';
@@ -96,6 +96,21 @@ export default function ProductDetail() {
       toast.error(err.response?.data?.error || 'Gagal memproses pembelian');
     } finally {
       setBuying(false);
+    }
+  };
+
+  const handleReportReview = async (reviewId) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const reason = window.prompt('Alasan laporan ulasan ini:');
+    if (!reason?.trim()) return;
+    try {
+      await reportReview(reviewId, reason.trim());
+      toast.success('Laporan dikirim ke admin');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal mengirim laporan');
     }
   };
 
@@ -360,6 +375,15 @@ export default function ProductDetail() {
                 </div>
                 <p className="text-sm font-medium text-heading mt-1">{review.author}</p>
                 <p className="text-muted text-sm mt-1">{review.comment}</p>
+                {user && review.authorId !== user.id && (
+                  <button
+                    type="button"
+                    onClick={() => handleReportReview(review.id)}
+                    className="text-xs text-subtle hover:text-red-600 mt-1"
+                  >
+                    Laporkan ulasan
+                  </button>
+                )}
               </div>
             ))}
           </div>

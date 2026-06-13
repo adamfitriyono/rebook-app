@@ -27,21 +27,22 @@ export default function Navbar() {
   const [search, setSearch] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
-    if (!user) {
+    if (!user || isAdmin) {
       setUnreadCount(0);
       return undefined;
     }
     const fetchUnread = () => {
       getUnreadCount()
-        .then(({ data }) => setUnreadCount(data.data.count))
+        .then(({ data }) => setUnreadCount(data.data?.count ?? 0))
         .catch(() => {});
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, isAdmin]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -74,23 +75,27 @@ export default function Navbar() {
           <Link to="/profile" onClick={closeMobile} className="btn-ghost">
             Profil
           </Link>
-          <Link to="/orders" onClick={closeMobile} className="btn-ghost">
-            Pesanan
-          </Link>
-          <Link to="/messages" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
-            <MessageCircle size={18} /> Pesan
-            {unreadCount > 0 && (
-              <span className="bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Link>
+          {!isAdmin && (
+            <>
+              <Link to="/orders" onClick={closeMobile} className="btn-ghost">
+                Pesanan
+              </Link>
+              <Link to="/messages" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
+                <MessageCircle size={18} /> Pesan
+                {unreadCount > 0 && (
+                  <span className="bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
           {user.role === 'admin' && (
-            <Link to="/admin" onClick={closeMobile} className="btn-ghost">
+            <Link to="/admin" onClick={closeMobile} className="btn-ghost font-medium text-primary">
               Admin Panel
             </Link>
           )}
-          {(user.role === 'seller' || user.role === 'admin') && (
+          {user.role === 'seller' && (
             <Link to="/seller" onClick={closeMobile} className="btn-ghost font-medium text-primary">
               Seller Centre
             </Link>
@@ -148,7 +153,7 @@ export default function Navbar() {
               {itemCount > 0 && <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{itemCount}</span>}
             </Link>
 
-            {user && (
+            {user && !isAdmin && (
               <Link to="/messages" className="relative p-2 btn-ghost" aria-label="Pesan">
                 <MessageCircle size={22} />
                 {unreadCount > 0 && (
@@ -170,23 +175,27 @@ export default function Navbar() {
                     <Link to="/profile" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
                       Profil
                     </Link>
-                    <Link to="/orders" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
-                      Pesanan
-                    </Link>
-                    <Link to="/messages" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm flex items-center justify-between">
-                      Pesan
-                      {unreadCount > 0 && (
-                        <span className="bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
-                      )}
-                    </Link>
+                    {!isAdmin && (
+                      <>
+                        <Link to="/orders" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
+                          Pesanan
+                        </Link>
+                        <Link to="/messages" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm flex items-center justify-between">
+                          Pesan
+                          {unreadCount > 0 && (
+                            <span className="bg-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                              {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                          )}
+                        </Link>
+                      </>
+                    )}
                     {user.role === 'admin' && (
-                      <Link to="/admin" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
+                      <Link to="/admin" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-primary font-medium">
                         Admin Panel
                       </Link>
                     )}
-                    {(user.role === 'seller' || user.role === 'admin') && (
+                    {user.role === 'seller' && (
                       <Link to="/seller" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-primary font-medium">
                         Seller Centre
                       </Link>

@@ -40,6 +40,9 @@ app.use('/api/support', require('./routes/support'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/sellers', require('./routes/sellers'));
 app.use('/api/addresses', require('./routes/addresses'));
+app.use('/api/banners', require('./routes/banners'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/disputes', require('./routes/disputes'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

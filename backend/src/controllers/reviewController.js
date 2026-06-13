@@ -5,7 +5,7 @@ exports.getProductReviews = async (req, res, next) => {
   try {
     const productId = parseInt(req.params.productId, 10);
     const reviews = await prisma.review.findMany({
-      where: { productId },
+      where: { productId, hidden: false },
       include: { author: { select: { id: true, fullName: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -111,6 +111,38 @@ exports.deleteReview = async (req, res, next) => {
 
     await prisma.review.delete({ where: { id } });
     res.json({ success: true, message: 'Review deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.reportReview = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { reason } = req.body;
+
+    if (!reason?.trim()) {
+      return res.status(400).json({ success: false, error: 'Alasan laporan wajib diisi' });
+    }
+
+    const review = await prisma.review.findUnique({ where: { id } });
+    if (!review || review.hidden) {
+      return res.status(404).json({ success: false, error: 'Review not found' });
+    }
+
+    if (review.authorId === req.user.id) {
+      return res.status(400).json({ success: false, error: 'Tidak bisa melaporkan ulasan sendiri' });
+    }
+
+    const report = await prisma.reviewReport.create({
+      data: {
+        reviewId: id,
+        reporterId: req.user.id,
+        reason: reason.trim(),
+      },
+    });
+
+    res.status(201).json({ success: true, data: report });
   } catch (err) {
     next(err);
   }

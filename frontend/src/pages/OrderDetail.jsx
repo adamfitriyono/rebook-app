@@ -18,7 +18,7 @@ import {
   canPayOrder,
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
-import { formatPaymentMethod } from '../utils/paymentMethods';
+import { createDispute } from '../services/disputes';
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -27,6 +27,9 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [disputeSubject, setDisputeSubject] = useState('');
+  const [disputeDescription, setDisputeDescription] = useState('');
+  const [disputeLoading, setDisputeLoading] = useState(false);
 
   const loadOrder = useCallback(() => {
     setLoading(true);
@@ -89,6 +92,26 @@ export default function OrderDetail() {
       toast.error(err.response?.data?.error || 'Gagal konfirmasi pesanan');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleSubmitDispute = async (e) => {
+    e.preventDefault();
+    if (!disputeSubject.trim() || !disputeDescription.trim()) return;
+    try {
+      setDisputeLoading(true);
+      await createDispute({
+        orderId: order.id,
+        subject: disputeSubject.trim(),
+        description: disputeDescription.trim(),
+      });
+      toast.success('Dispute diajukan. Tim support akan meninjau.');
+      setDisputeSubject('');
+      setDisputeDescription('');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal mengajukan dispute');
+    } finally {
+      setDisputeLoading(false);
     }
   };
 
@@ -211,6 +234,35 @@ export default function OrderDetail() {
       <div className="mb-6">
         <InvoicePrintable order={order} />
       </div>
+
+      {['paid', 'shipped', 'delivered', 'completed'].includes(order.status) && (
+        <div className="surface-card p-6 mb-6">
+          <h2 className="font-semibold mb-3">Ajukan Dispute / Support</h2>
+          <p className="text-sm text-subtle mb-4">
+            Ada masalah dengan pesanan ini? Ajukan dispute dan tim admin akan meninjau.
+          </p>
+          <form onSubmit={handleSubmitDispute} className="space-y-3 max-w-lg">
+            <input
+              type="text"
+              value={disputeSubject}
+              onChange={(e) => setDisputeSubject(e.target.value)}
+              placeholder="Subjek (mis. Buku tidak sesuai)"
+              className="input-field"
+              required
+            />
+            <textarea
+              value={disputeDescription}
+              onChange={(e) => setDisputeDescription(e.target.value)}
+              placeholder="Jelaskan masalah secara detail..."
+              className="input-field min-h-[100px]"
+              required
+            />
+            <button type="submit" disabled={disputeLoading} className="btn-primary">
+              {disputeLoading ? 'Mengirim...' : 'Ajukan Dispute'}
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-3">
         {canPayOrder(order) && (

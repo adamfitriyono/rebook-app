@@ -176,7 +176,7 @@ exports.createOrder = async (req, res, next) => {
       };
     });
 
-    const breakdown = buildOrderBreakdown(subtotal, itemCount);
+    const breakdown = await buildOrderBreakdown(subtotal, itemCount);
     const checkoutItemIds = itemsToOrder.map((item) => item.id);
 
     const order = await prisma.$transaction(async (tx) => {

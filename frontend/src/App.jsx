@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ScrollToTop from './components/common/ScrollToTop';
+import ImpersonationBanner from './components/admin/ImpersonationBanner';
 import ToastContainer from './components/common/Toast';
 import CustomerServicePopup from './components/common/CustomerServicePopup';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -36,6 +37,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-light dark:bg-gray-950">
+      <ImpersonationBanner />
       <Navbar />
       <ToastContainer />
       <CustomerServicePopup />
@@ -60,7 +62,7 @@ function AppContent() {
           <Route path="/my-listings" element={<Navigate to="/seller/listings" replace />} />
           <Route path="/sell" element={<Navigate to="/seller/sell" replace />} />
           <Route path="/seller-dashboard" element={<Navigate to="/seller" replace />} />
-          <Route path="/edit-listing/:id" element={<ProtectedRoute roles={['seller', 'admin']}><EditListing /></ProtectedRoute>} />
+          <Route path="/edit-listing/:id" element={<ProtectedRoute roles={['seller']}><EditListing /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

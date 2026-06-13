@@ -1,23 +1,35 @@
-const SERVICE_FEE = 2500;
-const SHIPPING_FEE = 12000;
+const { getPlatformFees, DEFAULTS } = require('./platformSettings');
 
-function computeOrderTotal(subtotal) {
-  return subtotal + SERVICE_FEE + SHIPPING_FEE;
+async function computeOrderTotal(subtotal) {
+  const { serviceFee, shippingFee } = await getPlatformFees();
+  return subtotal + serviceFee + shippingFee;
 }
 
-function buildOrderBreakdown(subtotal, itemCount) {
+async function buildOrderBreakdown(subtotal, itemCount) {
+  const { serviceFee, shippingFee } = await getPlatformFees();
   return {
     subtotal,
-    serviceFee: SERVICE_FEE,
-    shippingFee: SHIPPING_FEE,
+    serviceFee,
+    shippingFee,
     itemCount,
-    totalPrice: computeOrderTotal(subtotal),
+    totalPrice: subtotal + serviceFee + shippingFee,
+  };
+}
+
+function buildOrderBreakdownSync(subtotal, itemCount, fees = DEFAULTS) {
+  return {
+    subtotal,
+    serviceFee: fees.serviceFee,
+    shippingFee: fees.shippingFee,
+    itemCount,
+    totalPrice: subtotal + fees.serviceFee + fees.shippingFee,
   };
 }
 
 module.exports = {
-  SERVICE_FEE,
-  SHIPPING_FEE,
+  DEFAULTS,
   computeOrderTotal,
   buildOrderBreakdown,
+  buildOrderBreakdownSync,
+  getPlatformFees,
 };
