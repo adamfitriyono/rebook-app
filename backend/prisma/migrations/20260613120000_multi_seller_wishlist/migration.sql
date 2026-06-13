@@ -1,0 +1,23 @@
+-- AlterTable Order: checkout group for multi-seller
+ALTER TABLE "Order" ADD COLUMN "checkoutGroupId" TEXT;
+
+-- CreateIndex
+CREATE INDEX "Order_checkoutGroupId_idx" ON "Order"("checkoutGroupId");
+
+-- CreateTable WishlistItem
+CREATE TABLE "WishlistItem" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "WishlistItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WishlistItem_userId_productId_key" ON "WishlistItem"("userId", "productId");
+CREATE INDEX "WishlistItem_userId_idx" ON "WishlistItem"("userId");
+
+-- AddForeignKey
+ALTER TABLE "WishlistItem" ADD CONSTRAINT "WishlistItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "WishlistItem" ADD CONSTRAINT "WishlistItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;

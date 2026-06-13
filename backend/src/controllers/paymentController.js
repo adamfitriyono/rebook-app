@@ -1,6 +1,94 @@
 const prisma = require('../config/database');
 const { isValidPaymentMethod } = require('../utils/paymentMethods');
 
+async function payOrder(tx, order, userId, paymentMethod, transactionIdSuffix = '') {
+  const transactionId = `TXN-${Date.now()}${transactionIdSuffix}`;
+
+  const transaction = await tx.transaction.create({
+    data: {
+      orderId: order.id,
+      userId,
+      amount: order.totalPrice,
+      paymentMethod,
+      transactionId,
+      status: 'success',
+    },
+  });
+
+  await tx.order.update({
+    where: { id: order.id },
+    data: { paymentStatus: 'paid', status: 'paid' },
+  });
+
+  const orderItems = await tx.orderItem.findMany({ where: { orderId: order.id } });
+  for (const item of orderItems) {
+    await tx.product.update({
+      where: { id: item.productId },
+      data: {
+        sold: { increment: item.quantity },
+        stock: { decrement: item.quantity },
+      },
+    });
+  }
+
+  return transaction;
+}
+
+exports.processCheckoutPayment = async (req, res, next) => {
+  try {
+    const { checkoutGroupId, paymentMethod } = req.body;
+
+    if (!checkoutGroupId) {
+      return res.status(400).json({ success: false, error: 'checkoutGroupId is required' });
+    }
+    if (!paymentMethod || !isValidPaymentMethod(paymentMethod)) {
+      return res.status(400).json({ success: false, error: 'Metode pembayaran tidak valid' });
+    }
+
+    const orders = await prisma.order.findMany({
+      where: { checkoutGroupId, buyerId: req.user.id },
+      include: { items: true },
+    });
+
+    if (!orders.length) {
+      return res.status(404).json({ success: false, error: 'Checkout group not found' });
+    }
+
+    const unpaid = orders.filter((o) => o.paymentStatus !== 'paid');
+    if (!unpaid.length) {
+      return res.status(400).json({ success: false, error: 'Orders already paid' });
+    }
+    if (unpaid.some((o) => o.status === 'cancelled')) {
+      return res.status(400).json({ success: false, error: 'Cannot pay cancelled orders' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const transactions = [];
+      for (let i = 0; i < unpaid.length; i += 1) {
+        const txn = await payOrder(tx, unpaid[i], req.user.id, paymentMethod, `-${i}`);
+        transactions.push(txn);
+      }
+      return transactions;
+    });
+
+    const grandTotal = result.reduce((sum, t) => sum + Number(t.amount), 0);
+
+    res.json({
+      success: true,
+      message: 'Pembayaran Berhasil',
+      data: {
+        checkoutGroupId,
+        orderIds: unpaid.map((o) => o.id),
+        grandTotal,
+        status: 'success',
+        transactionIds: result.map((t) => t.transactionId),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.processPayment = async (req, res, next) => {
   try {
     const { orderId, amount, paymentMethod } = req.body;
@@ -21,37 +109,8 @@ exports.processPayment = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Order already paid' });
     }
 
-    const transactionId = `TXN-${Date.now()}`;
-
     const result = await prisma.$transaction(async (tx) => {
-      const transaction = await tx.transaction.create({
-        data: {
-          orderId: order.id,
-          userId: req.user.id,
-          amount: amount || order.totalPrice,
-          paymentMethod,
-          transactionId,
-          status: 'success',
-        },
-      });
-
-      await tx.order.update({
-        where: { id: order.id },
-        data: { paymentStatus: 'paid', status: 'paid' },
-      });
-
-      const orderItems = await tx.orderItem.findMany({ where: { orderId: order.id } });
-      for (const item of orderItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            sold: { increment: item.quantity },
-            stock: { decrement: item.quantity },
-          },
-        });
-      }
-
-      return transaction;
+      return payOrder(tx, order, req.user.id, paymentMethod);
     });
 
     res.json({

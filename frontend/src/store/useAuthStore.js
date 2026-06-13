@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { getProfile, login as loginApi, register as registerApi } from '../services/auth';
 import { getCart } from '../services/cart';
 import { impersonateUser as impersonateUserApi } from '../services/admin';
+import { useWishlistStore } from './useWishlistStore';
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -33,6 +34,7 @@ export const useAuthStore = create((set) => ({
     localStorage.setItem('token', data.token);
     sessionStorage.removeItem('adminToken');
     set({ user: data.user, impersonating: false });
+    useWishlistStore.getState().fetchIds();
     return data;
   },
 
@@ -45,6 +47,7 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem('token');
     sessionStorage.removeItem('adminToken');
     set({ user: null, impersonating: false });
+    useWishlistStore.getState().clear();
   },
 
   setUser: (user) => set({ user }),

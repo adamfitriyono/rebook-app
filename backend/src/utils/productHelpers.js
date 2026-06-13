@@ -10,12 +10,52 @@ function computeProductRating(reviews) {
 }
 
 async function computeSellerRating(prisma, sellerId) {
-  const reviews = await prisma.review.findMany({
-    where: { targetSellerId: sellerId },
+  const map = await computeSellerRatingsBatch(prisma, [sellerId]);
+  return map.get(sellerId) ?? 0;
+}
+
+async function computeSellerRatingsBatch(prismaClient, sellerIds) {
+  const ids = [...new Set((sellerIds || []).filter((id) => id != null))];
+  const map = new Map(ids.map((id) => [id, 0]));
+  if (!ids.length) return map;
+
+  const rows = await prismaClient.review.groupBy({
+    by: ['targetSellerId'],
+    where: { targetSellerId: { in: ids } },
+    _avg: { rating: true },
   });
-  if (reviews.length === 0) return 0;
-  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-  return Math.round((sum / reviews.length) * 10) / 10;
+
+  rows.forEach((row) => {
+    if (row.targetSellerId != null && row._avg.rating != null) {
+      map.set(row.targetSellerId, Math.round(row._avg.rating * 10) / 10);
+    }
+  });
+
+  return map;
+}
+
+function formatProductsWithSellerRatings(products, ratingMap) {
+  return products.map((p) => formatProduct(p, ratingMap.get(p.sellerId) ?? 0));
+}
+
+const sellerPublicSelect = {
+  id: true,
+  fullName: true,
+  profileImage: true,
+  city: true,
+  sellerVerified: true,
+};
+
+function formatSeller(seller, sellerRating = 0) {
+  if (!seller) return undefined;
+  return {
+    id: seller.id,
+    fullName: seller.fullName,
+    profileImage: seller.profileImage || null,
+    city: seller.city || null,
+    rating: sellerRating,
+    verified: Boolean(seller.sellerVerified),
+  };
 }
 
 function formatProduct(product, sellerRating = 0) {
@@ -36,15 +76,7 @@ function formatProduct(product, sellerRating = 0) {
     heightCm: product.heightCm != null ? Number(product.heightCm) : null,
     rating,
     reviewCount,
-    seller: product.seller
-      ? {
-          id: product.seller.id,
-          fullName: product.seller.fullName,
-          profileImage: product.seller.profileImage || null,
-          city: product.seller.city || null,
-          rating: sellerRating,
-        }
-      : undefined,
+    seller: formatSeller(product.seller, sellerRating),
     stock: product.stock,
     sold: product.sold,
     viewCount: product.viewCount ?? 0,
@@ -95,7 +127,13 @@ function parseShippingSpecs(body) {
 module.exports = {
   computeProductRating,
   computeSellerRating,
+  computeSellerRatingsBatch,
+  formatProductsWithSellerRatings,
   formatProduct,
+  formatSeller,
+  sellerPublicSelect,
   parseDiscountPercent,
+  parseOptionalInt,
+  parseOptionalDecimal,
   parseShippingSpecs,
 };

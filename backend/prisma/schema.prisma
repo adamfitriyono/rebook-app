@@ -20,6 +20,10 @@ model User {
   province     String?
   postalCode   String?
 
+  sellerVerified   Boolean   @default(false)
+  sellerVerifiedAt DateTime?
+  sellerVerifiedBy String?
+
   productsListed       Product[]        @relation("SellerProducts")
   cart                 Cart?
   orders               Order[]          @relation("BuyerOrders")
@@ -33,6 +37,7 @@ model User {
   buyerDisputes        Dispute[]        @relation("BuyerDisputes")
   sellerDisputes       Dispute[]        @relation("SellerDisputes")
   adminAuditLogs       AdminAuditLog[]  @relation("AdminAuditLogs")
+  wishlistItems        WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,6 +79,7 @@ model Product {
   orderItems     OrderItem[]
   reviews        Review[]
   conversations  Conversation[]
+  wishlistItems  WishlistItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,6 +131,7 @@ model Order {
   shippingCity     String
   shippingProvince String
   trackingNumber   String?
+  checkoutGroupId  String?
 
   transaction Transaction?
   disputes    Dispute[]
@@ -133,6 +140,7 @@ model Order {
   updatedAt DateTime @updatedAt
 
   @@index([buyerId])
+  @@index([checkoutGroupId])
 }
 
 model OrderItem {
@@ -292,4 +300,16 @@ model PlatformSetting {
   updatedBy Int?
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
 }

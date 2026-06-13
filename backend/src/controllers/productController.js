@@ -1,5 +1,5 @@
 const prisma = require('../config/database');
-const { computeSellerRating, formatProduct, parseDiscountPercent, parseShippingSpecs } = require('../utils/productHelpers');
+const { computeSellerRating, formatProduct, formatProductsWithSellerRatings, computeSellerRatingsBatch, parseDiscountPercent, parseShippingSpecs, parseOptionalInt, parseOptionalDecimal, sellerPublicSelect } = require('../utils/productHelpers');
 const { validateCategoryName } = require('./categoryController');
 const { uploadImages, DEFAULT_PRODUCT_IMAGE } = require('../utils/cloudinaryUpload');
 
@@ -40,19 +40,15 @@ exports.getProducts = async (req, res, next) => {
         take: limit,
         orderBy,
         include: {
-          seller: { select: { id: true, fullName: true } },
+          seller: { select: sellerPublicSelect },
           reviews: { select: { rating: true } },
         },
       }),
       prisma.product.count({ where }),
     ]);
 
-    let formatted = await Promise.all(
-      products.map(async (p) => {
-        const sellerRating = await computeSellerRating(prisma, p.sellerId);
-        return formatProduct(p, sellerRating);
-      })
-    );
+    const ratingMap = await computeSellerRatingsBatch(prisma, products.map((p) => p.sellerId));
+    let formatted = formatProductsWithSellerRatings(products, ratingMap);
 
     if (sort === 'rating') {
       formatted = formatted.sort((a, b) => b.rating - a.rating);
@@ -79,7 +75,7 @@ exports.getProductById = async (req, res, next) => {
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        seller: { select: { id: true, fullName: true, phoneNumber: true, profileImage: true, city: true } },
+        seller: { select: { ...sellerPublicSelect, phoneNumber: true } },
         reviews: {
           where: { hidden: false },
           include: { author: { select: { id: true, fullName: true } } },

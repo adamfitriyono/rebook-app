@@ -1,3 +1,4 @@
+const compression = require('compression');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -8,6 +9,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+app.use(compression());
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
@@ -43,6 +45,7 @@ app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/disputes', require('./routes/disputes'));
+app.use('/api/wishlist', require('./routes/wishlist'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });

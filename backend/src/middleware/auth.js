@@ -24,6 +24,9 @@ const authenticate = async (req, res, next) => {
         city: true,
         province: true,
         postalCode: true,
+        sellerVerified: true,
+        sellerVerifiedAt: true,
+        sellerVerifiedBy: true,
       },
     });
 

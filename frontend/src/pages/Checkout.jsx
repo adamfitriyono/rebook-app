@@ -8,14 +8,16 @@ import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector'
 import CheckoutOrderSummary from '../components/checkout/CheckoutOrderSummary';
 import { getCart } from '../services/cart';
 import { createOrder } from '../services/orders';
-import { processPayment } from '../services/payments';
+import { processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
-import { buildOrderBreakdown, DEFAULT_FEES } from '../utils/orderFees';
+import { groupCartItemsBySeller, buildMultiSellerBreakdown, DEFAULT_FEES } from '../utils/orderFees';
 import { getPublicFees } from '../services/settings';
 import { resolveMediaUrl } from '../utils/media';
+import { useCartStore } from '../store/useAuthStore';
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const fetchCart = useCartStore((s) => s.fetchCart);
   const [cart, setCart] = useState(null);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -47,13 +49,14 @@ export default function Checkout() {
 
   const breakdown = useMemo(() => {
     if (!cart?.selectedItems?.length) return null;
-    const subtotal = cart.selectedItems.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
-      0,
-    );
-    const itemCount = cart.selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-    return buildOrderBreakdown(subtotal, itemCount, fees);
+    const groups = groupCartItemsBySeller(cart.selectedItems);
+    return buildMultiSellerBreakdown(groups, fees);
   }, [cart, fees]);
+
+  const sellerGroups = useMemo(() => {
+    if (!cart?.selectedItems?.length) return [];
+    return groupCartItemsBySeller(cart.selectedItems);
+  }, [cart]);
 
   const onSubmit = async (formData) => {
     if (!paymentMethod) {
@@ -66,16 +69,15 @@ export default function Checkout() {
       setLoading(true);
       const cartItemIds = cart.selectedItems.map((item) => item.id);
       const { data: orderData } = await createOrder({ ...formData, cartItemIds });
-      const order = orderData.data;
+      const { checkoutGroupId, grandTotal } = orderData.data;
 
-      await processPayment({
-        orderId: order.id,
-        amount: order.totalPrice,
-        paymentMethod,
-      });
+      await processCheckoutPayment({ checkoutGroupId, paymentMethod });
 
+      await fetchCart();
       toast.success('Pembayaran berhasil!');
-      navigate(`/order-confirmation/${order.id}`);
+      navigate(`/order-confirmation/group/${checkoutGroupId}`, {
+        state: { grandTotal },
+      });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Checkout gagal');
     } finally {
@@ -151,20 +153,26 @@ export default function Checkout() {
 
         <div className="surface-card p-6 h-fit lg:sticky lg:top-24 rounded-2xl space-y-4">
           <h2 className="font-bold text-heading">Ringkasan Pesanan</h2>
-          <div className="space-y-3 max-h-48 overflow-y-auto">
-            {cart.selectedItems.map((item) => (
-              <div key={item.id} className="flex gap-3">
-                <img
-                  src={resolveMediaUrl(item.product.images?.[0], 'https://picsum.photos/60/80')}
-                  alt={item.product.title}
-                  className="w-12 h-16 object-cover rounded shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-heading truncate">{item.product.title}</p>
-                  {item.product.seller?.fullName && (
-                    <p className="text-xs text-subtle truncate">{item.product.seller.fullName}</p>
-                  )}
-                  <p className="text-xs text-subtle">Qty: {item.quantity}</p>
+          <div className="space-y-4 max-h-64 overflow-y-auto">
+            {sellerGroups.map((group) => (
+              <div key={group.sellerId}>
+                <p className="text-xs font-semibold text-subtle uppercase tracking-wide mb-2">
+                  {group.seller?.fullName || 'Toko'}
+                </p>
+                <div className="space-y-2">
+                  {group.items.map((item) => (
+                    <div key={item.id} className="flex gap-3">
+                      <img
+                        src={resolveMediaUrl(item.product.images?.[0], 'https://picsum.photos/60/80')}
+                        alt={item.product.title}
+                        className="w-12 h-16 object-cover rounded shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-heading truncate">{item.product.title}</p>
+                        <p className="text-xs text-subtle">Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

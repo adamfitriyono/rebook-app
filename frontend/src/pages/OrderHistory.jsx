@@ -7,7 +7,7 @@ import EmptyState from '../components/common/EmptyState';
 import StatusBadge from '../components/common/StatusBadge';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import { getOrders, confirmOrder, cancelOrder } from '../services/orders';
-import { processPayment } from '../services/payments';
+import { processPayment, processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { resolveMediaUrl } from '../utils/media';
@@ -49,11 +49,18 @@ export default function OrderHistory() {
   const handlePay = async (order) => {
     try {
       setActionId(order.id);
-      await processPayment({
-        orderId: order.id,
-        amount: order.totalPrice,
-        paymentMethod: 'qris',
-      });
+      if (order.checkoutGroupId) {
+        await processCheckoutPayment({
+          checkoutGroupId: order.checkoutGroupId,
+          paymentMethod: 'qris',
+        });
+      } else {
+        await processPayment({
+          orderId: order.id,
+          amount: order.totalPrice,
+          paymentMethod: 'qris',
+        });
+      }
       toast.success('Pembayaran berhasil!');
       fetchOrders();
     } catch (err) {
@@ -146,6 +153,14 @@ export default function OrderHistory() {
                   <div className="flex-1 min-w-0 flex justify-between items-start gap-3">
                     <div className="min-w-0">
                       <p className="font-medium text-heading truncate">{getOrderProductTitle(order)}</p>
+                      {order.seller?.fullName && (
+                        <p className="text-xs text-subtle truncate">{order.seller.fullName}</p>
+                      )}
+                      {order.checkoutGroupId && (
+                        <p className="text-xs text-primary/80 mt-0.5">
+                          Bagian checkout #{order.checkoutGroupId.slice(0, 8)}
+                        </p>
+                      )}
                       <p className="text-sm text-subtle mt-0.5">{formatDate(order.createdAt)}</p>
                       <p className="font-bold text-primary mt-2">{formatPrice(order.totalPrice)}</p>
                       <p className="text-sm text-muted mt-0.5">

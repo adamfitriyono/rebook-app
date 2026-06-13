@@ -9,17 +9,44 @@ export function getApiBaseUrl() {
 /** Avatar default untuk semua user (pembeli, penjual, admin). */
 export const DEFAULT_AVATAR = '/images/user-pic-default.svg';
 
-/** Resolve URL avatar; jatuh ke gambar default jika kosong. */
-export function resolveAvatarUrl(path) {
-  return resolveMediaUrl(path, DEFAULT_AVATAR);
+/** Sisipkan transform Cloudinary untuk gambar lebih ringan. */
+export function optimizeCloudinaryUrl(url, { width, quality = 'auto', format = 'auto' } = {}) {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+
+  const marker = '/upload/';
+  const idx = url.indexOf(marker);
+  if (idx === -1) return url;
+
+  const prefix = url.slice(0, idx + marker.length);
+  const suffix = url.slice(idx + marker.length);
+
+  if (/^(w_|c_|q_|f_|g_)/.test(suffix)) return url;
+
+  const transforms = [`w_${width}`, `q_${quality}`, `f_${format}`].filter(Boolean).join(',');
+  if (!transforms) return url;
+
+  return `${prefix}${transforms}/${suffix}`;
 }
 
-/** Ubah path /uploads/... menjadi URL penuh di production. */
-export function resolveMediaUrl(path, fallback = null) {
+/** Resolve URL avatar; jatuh ke gambar default jika kosong. */
+export function resolveAvatarUrl(path, { width = 80 } = {}) {
+  return resolveMediaUrl(path, DEFAULT_AVATAR, { width });
+}
+
+/**
+ * Ubah path /uploads/... menjadi URL penuh.
+ * @param {string|null} path
+ * @param {string|null} fallback
+ * @param {{ width?: number }} [options] — width untuk optimasi Cloudinary
+ */
+export function resolveMediaUrl(path, fallback = null, options = {}) {
   if (!path) return fallback;
   if (path.startsWith('blob:') || path.startsWith('data:')) return path;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return options.width ? optimizeCloudinaryUrl(path, { width: options.width }) : path;
+  }
 
   const base = getApiBaseUrl();
-  return path.startsWith('/') ? `${base}${path}` : `${base}/${path}`;
+  const url = path.startsWith('/') ? `${base}${path}` : `${base}/${path}`;
+  return options.width ? optimizeCloudinaryUrl(url, { width: options.width }) : url;
 }

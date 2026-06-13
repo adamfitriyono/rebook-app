@@ -2,6 +2,7 @@ const prisma = require('../config/database');
 const jwt = require('jsonwebtoken');
 const { logAdminAction } = require('../utils/adminAudit');
 const { getPlatformFees, updatePlatformFees } = require('../utils/platformSettings');
+const { verifySellersForDeliveredOrder } = require('../utils/sellerVerification');
 
 const sanitizeUser = (user) => ({
   id: user.id,
@@ -459,6 +460,9 @@ exports.patchOrderStatus = async (req, res, next) => {
     if (trackingNumber !== undefined) data.trackingNumber = trackingNumber || null;
 
     const order = await prisma.order.update({ where: { id }, data });
+    if (data.status === 'delivered') {
+      await verifySellersForDeliveredOrder(prisma, id);
+    }
     await logAdminAction(req.user.id, 'order.update', {
       entityType: 'order',
       entityId: id,

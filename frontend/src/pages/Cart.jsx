@@ -8,6 +8,7 @@ import { getCart, updateCartItem, updateCartSelection, removeCartItem } from '..
 import { toast } from '../store/useToastStore';
 import { formatPrice } from '../utils/formatters';
 import { resolveMediaUrl } from '../utils/media';
+import { groupCartItemsBySeller } from '../utils/orderFees';
 import BackButton from '../components/common/BackButton';
 
 export default function Cart() {
@@ -34,6 +35,16 @@ export default function Cart() {
     () => cart?.items?.some((item) => item.selected) ?? false,
     [cart],
   );
+
+  const sellerGroups = useMemo(
+    () => (cart?.items ? groupCartItemsBySeller(cart.items) : []),
+    [cart],
+  );
+
+  const selectedSellerCount = useMemo(() => {
+    const selected = cart?.items?.filter((item) => item.selected) ?? [];
+    return groupCartItemsBySeller(selected).length;
+  }, [cart]);
 
   const handleUpdate = async (itemId, quantity) => {
     if (quantity < 1) return;
@@ -127,7 +138,23 @@ export default function Cart() {
             )}
           </div>
 
-          {cart.items.map((item) => {
+          {sellerGroups.map((group) => (
+            <div key={group.sellerId} className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <Store size={16} className="text-primary shrink-0" />
+                {group.seller?.id ? (
+                  <Link
+                    to={`/toko/${group.seller.id}`}
+                    className="text-sm font-semibold text-heading hover:text-primary truncate"
+                  >
+                    {group.seller.fullName}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-semibold text-heading">Toko</span>
+                )}
+              </div>
+
+              {group.items.map((item) => {
             const isSelected = item.selected ?? true;
 
             return (
@@ -228,6 +255,8 @@ export default function Cart() {
               </div>
             );
           })}
+            </div>
+          ))}
         </div>
 
         <div className="surface-card p-6 h-fit lg:sticky lg:top-24 rounded-2xl border-2 border-gray-200 dark:border-gray-700">
@@ -239,7 +268,9 @@ export default function Cart() {
             <span className="font-bold text-heading">{formatPrice(cart.selectedSubtotal)}</span>
           </div>
           <p className="text-xs text-subtle border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-            Ongkos kirim dihitung di checkout
+            {selectedSellerCount > 1
+              ? `${selectedSellerCount} pesanan terpisah (per toko) — ongkir dihitung per toko di checkout`
+              : 'Ongkos kirim dihitung di checkout'}
           </p>
           <button
             type="button"

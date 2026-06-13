@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { logAdminAction } = require('../utils/adminAudit');
+const { countSuccessfulSales, VERIFIED_SALES_THRESHOLD } = require('../utils/sellerVerification');
 
 exports.getStats = async (req, res, next) => {
   try {
@@ -47,15 +48,28 @@ exports.getUsers = async (req, res, next) => {
           email: true,
           fullName: true,
           role: true,
+          sellerVerified: true,
+          sellerVerifiedAt: true,
+          sellerVerifiedBy: true,
           createdAt: true,
         },
       }),
       prisma.user.count({ where }),
     ]);
 
+    const usersWithSales = await Promise.all(
+      users.map(async (user) => {
+        if (user.role !== 'seller' && user.role !== 'admin') {
+          return user;
+        }
+        const successfulSales = await countSuccessfulSales(prisma, user.id);
+        return { ...user, successfulSales, verifiedSalesRequired: VERIFIED_SALES_THRESHOLD };
+      }),
+    );
+
     res.json({
       success: true,
-      data: users,
+      data: usersWithSales,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (err) {
@@ -89,6 +103,71 @@ exports.patchUserRole = async (req, res, next) => {
     });
 
     res.json({ success: true, message: 'User role updated', data: user });
+  } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    next(err);
+  }
+};
+
+exports.patchUserSellerVerified = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { verified } = req.body;
+
+    if (typeof verified !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'verified must be boolean' });
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true },
+    });
+
+    if (!target) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    if (target.role !== 'seller' && target.role !== 'admin') {
+      return res.status(400).json({ success: false, error: 'Only sellers can be verified' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: verified
+        ? {
+            sellerVerified: true,
+            sellerVerifiedAt: new Date(),
+            sellerVerifiedBy: 'admin',
+          }
+        : {
+            sellerVerified: false,
+            sellerVerifiedAt: null,
+            sellerVerifiedBy: null,
+          },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        sellerVerified: true,
+        sellerVerifiedAt: true,
+        sellerVerifiedBy: true,
+      },
+    });
+
+    await logAdminAction(req.user.id, verified ? 'user.verify_seller' : 'user.unverify_seller', {
+      entityType: 'user',
+      entityId: id,
+      details: { verified },
+    });
+
+    res.json({
+      success: true,
+      message: verified ? 'Penjual ditandai terverifikasi' : 'Verifikasi penjual dicabut',
+      data: user,
+    });
   } catch (err) {
     if (err.code === 'P2025') {
       return res.status(404).json({ success: false, error: 'User not found' });

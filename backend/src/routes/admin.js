@@ -12,6 +12,7 @@ router.get('/stats', adminController.getStats);
 router.get('/analytics', adminPlatformController.getAnalytics);
 router.get('/users', adminController.getUsers);
 router.patch('/users/:id/role', adminController.patchUserRole);
+router.patch('/users/:id/verify', adminController.patchUserSellerVerified);
 router.post('/users/:id/impersonate', adminPlatformController.impersonateUser);
 router.get('/products', adminController.getProducts);
 router.patch('/products/:id/availability', adminController.patchProductAvailability);

@@ -2,6 +2,7 @@ import API from './api';
 
 export const getOrders = (params) => API.get('/orders', { params });
 export const getOrderById = (id) => API.get(`/orders/${id}`);
+export const getOrdersByGroup = (checkoutGroupId) => API.get(`/orders/group/${checkoutGroupId}`);
 export const createOrder = (data) => API.post('/orders', data);
 export const confirmOrder = (id) => API.put(`/orders/${id}/confirm`);
 export const cancelOrder = (id) => API.put(`/orders/${id}/cancel`);

@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
-const { computeSellerRating, formatProduct } = require('../utils/productHelpers');
+const { computeSellerRating, formatProduct, formatProductsWithSellerRatings, computeSellerRatingsBatch, sellerPublicSelect } = require('../utils/productHelpers');
+const { countSuccessfulSales, VERIFIED_SALES_THRESHOLD } = require('../utils/sellerVerification');
 
 exports.getSellerProfile = async (req, res, next) => {
   try {
@@ -13,6 +14,9 @@ exports.getSellerProfile = async (req, res, next) => {
         city: true,
         province: true,
         role: true,
+        sellerVerified: true,
+        sellerVerifiedAt: true,
+        sellerVerifiedBy: true,
       },
     });
 
@@ -20,22 +24,26 @@ exports.getSellerProfile = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Toko tidak ditemukan' });
     }
 
-    const [totalProducts, totalSold, rating] = await Promise.all([
+    const [totalProducts, totalSold, rating, successfulSales] = await Promise.all([
       prisma.product.count({ where: { sellerId: id } }),
       prisma.product.aggregate({
         where: { sellerId: id },
         _sum: { sold: true },
       }),
       computeSellerRating(prisma, id),
+      countSuccessfulSales(prisma, id),
     ]);
 
     res.json({
       success: true,
       data: {
         ...seller,
+        verified: seller.sellerVerified,
         rating,
         totalProducts,
         totalSold: totalSold._sum.sold || 0,
+        successfulSales,
+        verifiedSalesRequired: VERIFIED_SALES_THRESHOLD,
       },
     });
   } catch (err) {
@@ -74,17 +82,15 @@ exports.getSellerProducts = async (req, res, next) => {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          seller: { select: { id: true, fullName: true } },
+          seller: { select: sellerPublicSelect },
           reviews: { select: { rating: true } },
         },
       }),
       prisma.product.count({ where }),
     ]);
 
-    const sellerRating = await computeSellerRating(prisma, sellerId);
-    const data = await Promise.all(
-      products.map((p) => formatProduct(p, sellerRating))
-    );
+    const ratingMap = await computeSellerRatingsBatch(prisma, products.map((p) => p.sellerId));
+    const data = formatProductsWithSellerRatings(products, ratingMap);
 
     res.json({
       success: true,

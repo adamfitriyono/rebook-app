@@ -19,6 +19,9 @@ const sanitizeUser = (user) => ({
   city: user.city,
   province: user.province,
   postalCode: user.postalCode,
+  sellerVerified: user.sellerVerified,
+  sellerVerifiedAt: user.sellerVerifiedAt,
+  sellerVerifiedBy: user.sellerVerifiedBy,
 });
 
 exports.register = async (req, res, next) => {

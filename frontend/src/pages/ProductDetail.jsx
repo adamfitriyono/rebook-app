@@ -15,6 +15,7 @@ import BuyerProtectionBadge from '../components/product/BuyerProtectionBadge';
 import { resolveAvatarUrl } from '../utils/media';
 import { CONDITION_LABELS } from '../utils/constants';
 import BackButton from '../components/common/BackButton';
+import VerifiedSellerBadge from '../components/product/VerifiedSellerBadge';
 import ProductSpecsTable from '../components/product/ProductSpecsTable';
 import RelatedProducts from '../components/product/RelatedProducts';
 import { hasProductSpecs } from '../utils/productSpecs';
@@ -189,6 +190,7 @@ export default function ProductDetail() {
           alt={product.title}
           discountPercent={product.discountPercent}
           soldOut={product.stock <= 0}
+          productId={product.id}
         />
 
         <div className="flex flex-col gap-4 min-w-0">
@@ -249,7 +251,10 @@ export default function ProductDetail() {
               className="w-10 h-10 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
             />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-heading">{product.seller?.fullName}</p>
+              <p className="font-semibold text-heading inline-flex items-center gap-1.5 flex-wrap">
+                {product.seller?.fullName}
+                <VerifiedSellerBadge verified={product.seller?.verified} size={16} />
+              </p>
               {product.seller?.city && (
                 <p className="text-xs text-subtle">{product.seller.city}</p>
               )}

@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get('/seller', authorize('seller'), orderController.getSellerOrders);
+router.get('/group/:checkoutGroupId', orderController.getOrdersByGroup);
 router.get('/', orderController.getOrders);
 router.get('/:id', orderController.getOrderById);
 router.post('/', orderController.createOrder);

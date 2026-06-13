@@ -20,6 +20,7 @@ import {
   createAdminCategory,
   deleteAdminCategory,
   patchUserRole,
+  patchUserSellerVerified,
   patchProductAvailability,
   deleteAdminProduct,
   patchAdminReview,
@@ -142,6 +143,16 @@ export default function AdminDashboard() {
       loadTab();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Gagal memperbarui role');
+    }
+  };
+
+  const handleVerifyToggle = async (userId, verified) => {
+    try {
+      await patchUserSellerVerified(userId, verified);
+      toast.success(verified ? 'Penjual ditandai terverifikasi' : 'Verifikasi dicabut');
+      loadTab();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal memperbarui verifikasi');
     }
   };
 
@@ -310,7 +321,7 @@ export default function AdminDashboard() {
           </div>
           <div className="surface-card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-left text-muted"><th className="p-3">Nama</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Daftar</th><th className="p-3">Aksi</th></tr></thead>
+              <thead><tr className="border-b text-left text-muted"><th className="p-3">Nama</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Verifikasi</th><th className="p-3">Daftar</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id} className="border-b border-gray-100 dark:border-gray-800">
@@ -320,6 +331,31 @@ export default function AdminDashboard() {
                       <select value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)} className="input-field text-sm py-1">
                         <option value="buyer">buyer</option><option value="seller">seller</option><option value="admin">admin</option>
                       </select>
+                    </td>
+                    <td className="p-3">
+                      {(u.role === 'seller' || u.role === 'admin') ? (
+                        <div className="space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyToggle(u.id, !u.sellerVerified)}
+                            className={`text-xs px-2 py-1 rounded-lg border ${
+                              u.sellerVerified
+                                ? 'border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300'
+                                : 'border-gray-300 dark:border-gray-600 text-subtle'
+                            }`}
+                          >
+                            {u.sellerVerified ? 'Terverifikasi' : 'Belum verifikasi'}
+                          </button>
+                          {!u.sellerVerified && u.successfulSales != null && (
+                            <p className="text-xs text-subtle">{u.successfulSales}/{u.verifiedSalesRequired || 10} penjualan sukses</p>
+                          )}
+                          {u.sellerVerifiedBy && (
+                            <p className="text-xs text-subtle">via {u.sellerVerifiedBy}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-subtle">—</span>
+                      )}
                     </td>
                     <td className="p-3 text-subtle">{formatDate(u.createdAt)}</td>
                     <td className="p-3">

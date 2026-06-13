@@ -3,6 +3,7 @@ import { ZoomIn } from 'lucide-react';
 import { resolveMediaUrl } from '../../utils/media';
 import DiscountBadge from './DiscountBadge';
 import SoldBadge from './SoldBadge';
+import WishlistButton from './WishlistButton';
 import ImageLightbox from './ImageLightbox';
 
 const FALLBACK = 'https://picsum.photos/400/533';
@@ -12,8 +13,11 @@ export default function ProductImageGallery({
   alt = 'Produk',
   discountPercent,
   soldOut = false,
+  productId,
 }) {
-  const urls = (images?.length ? images : [null]).map((img) => resolveMediaUrl(img, FALLBACK));
+  const urls = (images?.length ? images : [null]).map((img, index) =>
+    resolveMediaUrl(img, FALLBACK, { width: index === 0 ? 800 : 120 }),
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const safeIndex = Math.min(activeIndex, urls.length - 1);
@@ -29,11 +33,20 @@ export default function ProductImageGallery({
         <img
           src={urls[safeIndex]}
           alt={alt}
+          loading="eager"
+          decoding="async"
           className="w-full h-full object-cover"
         />
         <DiscountBadge percent={discountPercent} />
+        {productId && (
+          <WishlistButton
+            productId={productId}
+            size={22}
+            className="absolute bottom-3 right-3 z-10 bg-white/90 dark:bg-gray-900/90 shadow-sm"
+          />
+        )}
         {soldOut && <SoldBadge />}
-        <span className="absolute bottom-3 right-3 z-10 p-1.5 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="absolute bottom-3 left-3 z-10 p-1.5 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity">
           <ZoomIn size={18} />
         </span>
       </button>
@@ -52,7 +65,7 @@ export default function ProductImageGallery({
               }`}
               aria-label={`Gambar ${index + 1}`}
             >
-              <img src={url} alt="" className="w-full h-full object-cover" />
+              <img src={url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>

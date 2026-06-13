@@ -4,6 +4,8 @@ export const getAdminStats = () => API.get('/admin/stats');
 export const getAdminAnalytics = () => API.get('/admin/analytics');
 export const getAdminUsers = (params) => API.get('/admin/users', { params });
 export const patchUserRole = (id, role) => API.patch(`/admin/users/${id}/role`, { role });
+export const patchUserSellerVerified = (id, verified) =>
+  API.patch(`/admin/users/${id}/verify`, { verified });
 export const impersonateUser = (id) => API.post(`/admin/users/${id}/impersonate`);
 export const getAdminProducts = (params) => API.get('/admin/products', { params });
 export const patchProductAvailability = (id, available) =>

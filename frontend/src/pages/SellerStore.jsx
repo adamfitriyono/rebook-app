@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import Loading from '../components/common/Loading';
+import VerifiedSellerBadge from '../components/product/VerifiedSellerBadge';
 import { getSellerProfile, getSellerProducts } from '../services/sellers';
 import { resolveAvatarUrl } from '../utils/media';
 import BackButton from '../components/common/BackButton';
@@ -65,7 +66,10 @@ export default function SellerStore() {
             className="w-16 h-16 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
           />
           <div>
-            <h1 className="text-2xl font-bold text-heading">{profile.fullName}</h1>
+            <h1 className="text-2xl font-bold text-heading inline-flex items-center gap-2 flex-wrap">
+              {profile.fullName}
+              <VerifiedSellerBadge verified={profile.verified} />
+            </h1>
             <div className="flex items-center gap-2 text-sm text-muted mt-1">
               {profile.city && <span>{profile.city}</span>}
               <span className="flex items-center gap-1">

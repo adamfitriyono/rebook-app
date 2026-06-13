@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { sellerPublicSelect } = require('../utils/productHelpers');
 
 const cartProductSelect = {
   id: true,
@@ -7,7 +8,7 @@ const cartProductSelect = {
   images: true,
   stock: true,
   available: true,
-  seller: { select: { id: true, fullName: true } },
+  seller: { select: sellerPublicSelect },
 };
 
 async function getOrCreateCart(userId) {

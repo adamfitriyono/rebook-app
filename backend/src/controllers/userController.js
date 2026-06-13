@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { countSuccessfulSales, VERIFIED_SALES_THRESHOLD } = require('../utils/sellerVerification');
 
 async function buildSellerStats(sellerId) {
   const products = await prisma.product.findMany({
@@ -37,6 +38,8 @@ async function buildSellerStats(sellerId) {
       .map((item) => item.order.id)
   );
 
+  const successfulSales = await countSuccessfulSales(prisma, sellerId);
+
   return {
     totalListings: products.length,
     totalSold: products.reduce((sum, p) => sum + p.sold, 0),
@@ -46,6 +49,8 @@ async function buildSellerStats(sellerId) {
     monthlyRevenue,
     pendingOrders: pendingOrderIds.size,
     paidOrderCount: new Set(paidItems.map((i) => i.order.id)).size,
+    successfulSales,
+    verifiedSalesRequired: VERIFIED_SALES_THRESHOLD,
   };
 }
 
@@ -67,8 +72,10 @@ exports.getDashboardStats = async (req, res, next) => {
     const cartItemCount = cart?.items.reduce((sum, i) => sum + i.quantity, 0) || 0;
 
     let sellerStats = null;
+    let sellerVerified = false;
     if (req.user.role === 'seller' || req.user.role === 'admin') {
       sellerStats = await buildSellerStats(userId);
+      sellerVerified = Boolean(req.user.sellerVerified);
     }
 
     res.json({
@@ -78,6 +85,7 @@ exports.getDashboardStats = async (req, res, next) => {
         cartItemCount,
         listings,
         sellerStats,
+        sellerVerified,
       },
     });
   } catch (err) {

@@ -1,5 +1,28 @@
 const prisma = require('../config/database');
-const { buildOrderBreakdown } = require('../utils/orderFees');
+const {
+  groupCartItemsBySeller,
+  formatOrderItems,
+  buildSellerOrderPayload,
+  generateCheckoutGroupId,
+} = require('../utils/orderHelpers');
+const { verifySellersForDeliveredOrder } = require('../utils/sellerVerification');
+
+function mapOrderSummary(order, breakdown, seller) {
+  return {
+    id: order.id,
+    seller,
+    items: formatOrderItems(order.items),
+    totalPrice: Number(order.totalPrice),
+    subtotal: breakdown.subtotal,
+    serviceFee: breakdown.serviceFee,
+    shippingFee: breakdown.shippingFee,
+    itemCount: breakdown.itemCount,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    checkoutGroupId: order.checkoutGroupId,
+    createdAt: order.createdAt,
+  };
+}
 
 exports.getOrders = async (req, res, next) => {
   try {
@@ -20,7 +43,16 @@ exports.getOrders = async (req, res, next) => {
         include: {
           items: {
             include: {
-              product: { select: { id: true, title: true, price: true, images: true } },
+              product: {
+                select: {
+                  id: true,
+                  title: true,
+                  price: true,
+                  images: true,
+                  sellerId: true,
+                  seller: { select: { id: true, fullName: true } },
+                },
+              },
             },
           },
           transaction: true,
@@ -31,6 +63,10 @@ exports.getOrders = async (req, res, next) => {
 
     const data = orders.map((o) => ({
       id: o.id,
+      checkoutGroupId: o.checkoutGroupId,
+      seller: o.items[0]?.product?.seller
+        ? { id: o.items[0].product.seller.id, fullName: o.items[0].product.seller.fullName }
+        : null,
       items: o.items.map((i) => ({
         product: {
           id: i.product.id,
@@ -62,6 +98,65 @@ exports.getOrders = async (req, res, next) => {
       success: true,
       data,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getOrdersByGroup = async (req, res, next) => {
+  try {
+    const { checkoutGroupId } = req.params;
+
+    const orders = await prisma.order.findMany({
+      where: { checkoutGroupId, buyerId: req.user.id },
+      orderBy: { id: 'asc' },
+      include: {
+        items: { include: { product: true } },
+        transaction: true,
+      },
+    });
+
+    if (!orders.length) {
+      return res.status(404).json({ success: false, error: 'Checkout group not found' });
+    }
+
+    const sellers = await prisma.user.findMany({
+      where: { id: { in: [...new Set(orders.flatMap((o) => o.items.map((i) => i.product.sellerId)))] } },
+      select: { id: true, fullName: true },
+    });
+    const sellerMap = new Map(sellers.map((s) => [s.id, s]));
+
+    const mapped = orders.map((order) => {
+      const sellerId = order.items[0]?.product?.sellerId;
+      const seller = sellerMap.get(sellerId) || null;
+      return {
+        id: order.id,
+        seller,
+        items: formatOrderItems(order.items),
+        totalPrice: Number(order.totalPrice),
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        transaction: order.transaction
+          ? {
+              paymentMethod: order.transaction.paymentMethod,
+              transactionId: order.transaction.transactionId,
+            }
+          : null,
+        createdAt: order.createdAt,
+      };
+    });
+
+    const grandTotal = mapped.reduce((sum, o) => sum + o.totalPrice, 0);
+
+    res.json({
+      success: true,
+      data: {
+        checkoutGroupId,
+        grandTotal,
+        orders: mapped,
+        paymentStatus: orders.every((o) => o.paymentStatus === 'paid') ? 'paid' : 'unpaid',
+      },
     });
   } catch (err) {
     next(err);
@@ -100,6 +195,7 @@ exports.getOrderById = async (req, res, next) => {
       success: true,
       data: {
         id: order.id,
+        checkoutGroupId: order.checkoutGroupId,
         items: order.items.map((i) => ({
           product: {
             id: i.product.id,
@@ -163,59 +259,60 @@ exports.createOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Pilih minimal satu produk untuk checkout' });
     }
 
-    let subtotal = 0;
-    let itemCount = 0;
-    const orderItems = itemsToOrder.map((item) => {
-      const priceAtTime = Number(item.product.price);
-      subtotal += priceAtTime * item.quantity;
-      itemCount += item.quantity;
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        priceAtTime,
-      };
-    });
-
-    const breakdown = await buildOrderBreakdown(subtotal, itemCount);
+    const checkoutGroupId = generateCheckoutGroupId();
     const checkoutItemIds = itemsToOrder.map((item) => item.id);
+    const sellerGroups = groupCartItemsBySeller(itemsToOrder);
 
-    const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
-        data: {
-          buyerId: req.user.id,
-          totalPrice: breakdown.totalPrice,
-          shippingAddress,
-          shippingCity,
-          shippingProvince,
-          items: { create: orderItems },
-        },
-        include: { items: { include: { product: true } } },
-      });
+    const sellerPayloads = await Promise.all(
+      sellerGroups.map((group) => buildSellerOrderPayload(group)),
+    );
+
+    const sellerIds = sellerPayloads.map((p) => p.sellerId);
+    const sellers = await prisma.user.findMany({
+      where: { id: { in: sellerIds } },
+      select: { id: true, fullName: true },
+    });
+    const sellerMap = new Map(sellers.map((s) => [s.id, s]));
+
+    const createdOrders = await prisma.$transaction(async (tx) => {
+      const orders = [];
+
+      for (const payload of sellerPayloads) {
+        const order = await tx.order.create({
+          data: {
+            buyerId: req.user.id,
+            checkoutGroupId,
+            totalPrice: payload.breakdown.totalPrice,
+            shippingAddress,
+            shippingCity,
+            shippingProvince,
+            items: { create: payload.items },
+          },
+          include: { items: { include: { product: true } } },
+        });
+        orders.push({ order, breakdown: payload.breakdown, sellerId: payload.sellerId });
+      }
 
       await tx.cartItem.deleteMany({
         where: { id: { in: checkoutItemIds }, cartId: cart.id },
       });
 
-      return newOrder;
+      return orders;
     });
+
+    const orders = createdOrders.map(({ order, breakdown, sellerId }) =>
+      mapOrderSummary(order, breakdown, sellerMap.get(sellerId) || null),
+    );
+
+    const grandTotal = orders.reduce((sum, o) => sum + o.totalPrice, 0);
 
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
       data: {
-        id: order.id,
-        items: order.items.map((i) => ({
-          product: { id: i.product.id, title: i.product.title, price: Number(i.product.price) },
-          quantity: i.quantity,
-          priceAtTime: Number(i.priceAtTime),
-        })),
-        totalPrice: Number(order.totalPrice),
-        subtotal: breakdown.subtotal,
-        serviceFee: breakdown.serviceFee,
-        shippingFee: breakdown.shippingFee,
-        itemCount: breakdown.itemCount,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
+        checkoutGroupId,
+        grandTotal,
+        orders,
       },
     });
   } catch (err) {
@@ -296,6 +393,8 @@ exports.confirmOrder = async (req, res, next) => {
       where: { id },
       data: { status: 'delivered' },
     });
+
+    await verifySellersForDeliveredOrder(prisma, id);
 
     res.json({
       success: true,
