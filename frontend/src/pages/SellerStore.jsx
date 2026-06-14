@@ -60,30 +60,37 @@ export default function SellerStore() {
   return (
     <div className="max-w-content mx-auto px-4 py-8">
       <Breadcrumb items={sellerStoreTrail(profile.fullName)} />
-      <div className="surface-card p-6 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <img
-            src={resolveAvatarUrl(profile.profileImage)}
-            alt={profile.fullName}
-            className="w-16 h-16 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
-          />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-heading inline-flex items-center gap-2 flex-wrap">
-              {profile.fullName}
-              <VerifiedSellerBadge verified={profile.verified} />
-            </h1>
-            <div className="flex items-center gap-2 text-sm text-muted mt-1">
-              {profile.city && <span>{profile.city}</span>}
-              <span className="flex items-center gap-1">
-                <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                {profile.rating || 0}
-              </span>
+      <div className="surface-card p-4 sm:p-6 mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <img
+              src={resolveAvatarUrl(profile.profileImage)}
+              alt={profile.fullName}
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover bg-gray-100 dark:bg-gray-700 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-heading leading-snug break-words">
+                {profile.fullName}
+              </h1>
+              <div className="mt-1">
+                <VerifiedSellerBadge verified={profile.verified} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted mt-2">
+                {profile.city && <span>{profile.city}</span>}
+                <span className="flex items-center gap-1">
+                  <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                  {profile.rating || 0}
+                </span>
+              </div>
+              <p className="text-sm text-subtle mt-1">
+                {profile.totalProducts} produk · {profile.totalSold} terjual
+              </p>
             </div>
-            <p className="text-sm text-subtle mt-1">
-              {profile.totalProducts} produk · {profile.totalSold} terjual
-            </p>
           </div>
-          <FollowStoreButton sellerId={profile.id} />
+          <FollowStoreButton
+            sellerId={profile.id}
+            className="w-full sm:w-auto justify-center shrink-0"
+          />
         </div>
       </div>
 

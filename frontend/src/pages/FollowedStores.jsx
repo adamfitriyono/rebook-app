@@ -45,19 +45,21 @@ export default function FollowedStores() {
       ) : (
         <div className="space-y-4">
           {stores.map((item) => (
-            <div key={item.id} className="surface-card p-5 flex flex-wrap items-center gap-4">
-              <Link to={`/toko/${item.sellerId}`} className="flex items-center gap-4 flex-1 min-w-0">
+            <div key={item.id} className="surface-card p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <Link to={`/toko/${item.sellerId}`} className="flex items-center gap-3 min-w-0 flex-1">
                 <img
                   src={resolveAvatarUrl(item.seller.profileImage)}
                   alt={item.seller.fullName}
-                  className="w-14 h-14 rounded-full object-cover bg-gray-100 dark:bg-gray-700 shrink-0"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover bg-gray-100 dark:bg-gray-700 shrink-0"
                 />
-                <div className="min-w-0">
-                  <p className="font-semibold text-heading inline-flex items-center gap-1.5 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-heading leading-snug break-words">
                     {item.seller.fullName}
-                    <VerifiedSellerBadge verified={item.seller.verified} size={14} />
                   </p>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-subtle mt-0.5">
+                  <div className="mt-1">
+                    <VerifiedSellerBadge verified={item.seller.verified} size={14} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-subtle mt-2">
                     {item.seller.city && <span>{item.seller.city}</span>}
                     <span className="flex items-center gap-1">
                       <Star size={12} className="fill-yellow-400 text-yellow-400" />
@@ -70,6 +72,7 @@ export default function FollowedStores() {
               </Link>
               <FollowStoreButton
                 sellerId={item.sellerId}
+                className="w-full sm:w-auto justify-center shrink-0"
                 onToggle={(sellerId, following) => {
                   if (!following) {
                     setStores((prev) => prev.filter((s) => s.sellerId !== sellerId));

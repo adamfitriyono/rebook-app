@@ -236,34 +236,41 @@ export default function ProductDetail() {
 
           <BuyerProtectionBadge />
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <img
-              src={resolveAvatarUrl(product.seller?.profileImage)}
-              alt={product.seller?.fullName || 'Penjual'}
-              className="w-10 h-10 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-heading inline-flex items-center gap-1.5 flex-wrap">
-                {product.seller?.fullName}
-                <VerifiedSellerBadge verified={product.seller?.verified} size={16} />
-              </p>
-              {product.seller?.city && (
-                <p className="text-xs text-subtle">{product.seller.city}</p>
-              )}
-            </div>
-            {product.seller?.id && (
-              <>
-                <FollowStoreButton sellerId={product.seller.id} />
+          {product.seller?.id && (
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <img
+                  src={resolveAvatarUrl(product.seller?.profileImage)}
+                  alt={product.seller?.fullName || 'Penjual'}
+                  className="w-12 h-12 rounded-full object-cover bg-gray-100 dark:bg-gray-700 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-heading leading-snug break-words">
+                    {product.seller?.fullName}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
+                    <VerifiedSellerBadge verified={product.seller?.verified} size={16} />
+                    {product.seller?.city && (
+                      <span className="text-xs text-subtle">{product.seller.city}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <FollowStoreButton
+                  sellerId={product.seller.id}
+                  className="w-full justify-center"
+                />
                 <Link
                   to={`/toko/${product.seller.id}`}
-                  className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary px-3 py-1.5 rounded-lg hover:bg-primary/5"
+                  className="inline-flex items-center justify-center gap-1.5 text-sm font-medium text-primary border border-primary px-3 py-1.5 rounded-xl hover:bg-primary/5 w-full"
                 >
                   <Store size={16} />
                   Kunjungi
                 </Link>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-2">
             <button

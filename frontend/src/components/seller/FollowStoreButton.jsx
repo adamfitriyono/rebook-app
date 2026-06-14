@@ -50,7 +50,7 @@ export default function FollowStoreButton({
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className={`inline-flex items-center gap-1.5 ${baseClass} disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 ${baseClass} disabled:opacity-50 whitespace-nowrap ${className}`}
     >
       {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
       {loading ? '...' : isFollowing ? 'Mengikuti' : 'Follow'}
