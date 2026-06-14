@@ -75,14 +75,21 @@ export default function ListingFormFields({ register, errors, categories, catego
             <label className="block text-sm font-medium mb-1">Stok</label>
             <input
               type="number"
-              defaultValue={1}
-              {...register('stock', { required: true, min: 1, valueAsNumber: true })}
+              min={0}
+              {...register('stock', {
+                required: 'Stok wajib diisi',
+                min: { value: 0, message: 'Stok minimal 0' },
+                valueAsNumber: true,
+              })}
               className="input-field"
             />
-            <p className="text-xs text-subtle mt-1">Buku bekas biasanya 1 eksemplar per listing.</p>
+            {errors.stock && <p className="text-red-500 text-sm">{errors.stock.message}</p>}
+            <p className="text-xs text-subtle mt-1">
+              Buku bekas biasanya 1 eksemplar per listing. Isi 0 jika sudah habis terjual.
+            </p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Diskon (%)</label>
+            <label className="block text-sm font-medium mb-1">Hemat (%)</label>
             <input
               type="number"
               min={0}
@@ -91,9 +98,9 @@ export default function ListingFormFields({ register, errors, categories, catego
               placeholder="Opsional"
               className="input-field"
             />
+            <p className="text-xs text-subtle mt-1">Lebih hemat dari buku baru</p>
           </div>
         </div>
-        <p className="text-xs text-subtle">Diskon 0–99, kosongkan jika tidak ada.</p>
       </FormSection>
 
       <FormSection title="Spesifikasi Pengiriman">

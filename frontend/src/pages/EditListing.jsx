@@ -97,10 +97,8 @@ export default function EditListing() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Breadcrumb items={homeTrail(CRUMBS.sellerCentre, CRUMBS.sellerListings, { label: 'Edit Listing' })} />
-        <h1 className="text-2xl font-bold text-heading">Edit Listing</h1>
-      </div>
+      <Breadcrumb items={homeTrail(CRUMBS.sellerCentre, CRUMBS.sellerListings, { label: 'Edit Listing' })} />
+      <h1 className="text-2xl font-bold text-heading mb-6">Edit Listing</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl surface-card p-6 space-y-6">
         <ListingFormFields
           register={register}

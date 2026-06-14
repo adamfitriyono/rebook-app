@@ -126,7 +126,7 @@ exports.createProduct = async (req, res, next) => {
 
     const parsedDiscount = parseDiscountPercent(discountPercent);
     if (parsedDiscount === undefined) {
-      return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
+      return res.status(400).json({ success: false, error: 'Hemat harus angka 0–99' });
     }
 
     const shipping = parseShippingSpecs(req.body);
@@ -192,12 +192,23 @@ exports.updateProduct = async (req, res, next) => {
       }
       updateData.category = category;
     }
-    if (stock !== undefined) updateData.stock = parseInt(stock, 10);
+    if (stock !== undefined && stock !== '') {
+      const parsedStock = parseInt(stock, 10);
+      if (Number.isNaN(parsedStock) || parsedStock < 0) {
+        return res.status(400).json({ success: false, error: 'Stok harus angka 0 atau lebih' });
+      }
+      updateData.stock = parsedStock;
+      if (parsedStock === 0) {
+        updateData.available = false;
+      } else if (product.stock === 0) {
+        updateData.available = true;
+      }
+    }
     if (available !== undefined) updateData.available = available === 'true' || available === true;
     if (discountPercent !== undefined) {
       const parsedDiscount = parseDiscountPercent(discountPercent);
       if (parsedDiscount === undefined) {
-        return res.status(400).json({ success: false, error: 'Diskon harus angka 0–99' });
+        return res.status(400).json({ success: false, error: 'Hemat harus angka 0–99' });
       }
       updateData.discountPercent = parsedDiscount;
     }
