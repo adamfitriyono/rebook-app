@@ -43,14 +43,21 @@ export default function LikeButton({
     }
   };
 
+  const showCount = count > 0;
+  const pillClass = `inline-flex items-center rounded-full bg-white/95 dark:bg-gray-900/95 shadow-sm border border-gray-200/80 dark:border-gray-700 ${
+    showCount ? 'gap-1.5 px-2.5 py-1' : 'p-1.5'
+  } ${className}`;
+
   if (user?.role === 'admin') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 dark:bg-gray-900/95 shadow-sm border border-gray-200/80 dark:border-gray-700 ${className}`}
-        aria-label={`${count} suka`}
+        className={pillClass}
+        aria-label={showCount ? `${count} suka` : 'Belum ada suka'}
       >
         <Heart size={16} className="text-heading" />
-        <span className="text-sm font-medium text-heading tabular-nums">{count}</span>
+        {showCount && (
+          <span className="text-sm font-medium text-heading tabular-nums">{count}</span>
+        )}
       </span>
     );
   }
@@ -60,15 +67,23 @@ export default function LikeButton({
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/95 dark:bg-gray-900/95 shadow-sm border border-gray-200/80 dark:border-gray-700 transition-colors hover:bg-white disabled:opacity-50 ${className}`}
-      aria-label={isLiked ? 'Batalkan suka' : 'Sukai buku'}
+      className={`${pillClass} transition-colors hover:bg-white disabled:opacity-50`}
+      aria-label={
+        showCount
+          ? `${count} suka${isLiked ? ', batalkan suka' : ''}`
+          : isLiked
+            ? 'Batalkan suka'
+            : 'Sukai buku'
+      }
       aria-pressed={isLiked}
     >
       <Heart
         size={16}
         className={isLiked ? 'fill-red-500 text-red-500' : 'text-heading'}
       />
-      <span className="text-sm font-medium text-heading tabular-nums">{count}</span>
+      {showCount && (
+        <span className="text-sm font-medium text-heading tabular-nums">{count}</span>
+      )}
     </button>
   );
 }
