@@ -192,6 +192,42 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteAdminProduct(deleteTarget);
+      toast.success('Produk dihapus');
+      setDeleteTarget(null);
+      loadTab();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal menghapus produk');
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryTarget) return;
+    try {
+      await deleteAdminCategory(deleteCategoryTarget);
+      toast.success('Kategori dihapus');
+      setDeleteCategoryTarget(null);
+      loadTab();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal menghapus kategori');
+    }
+  };
+
+  const handleDeleteBanner = async () => {
+    if (!deleteBannerTarget) return;
+    try {
+      await deleteAdminBanner(deleteBannerTarget);
+      toast.success('Banner dihapus');
+      setDeleteBannerTarget(null);
+      loadTab();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal menghapus banner');
+    }
+  };
+
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     try {
@@ -228,9 +264,33 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout activeTab={tab} onTabChange={setTab}>
-      <ConfirmModal open={!!deleteTarget} title="Hapus Produk" message="Produk akan dihapus permanen." confirmLabel="Hapus" danger onConfirm={async () => { await deleteAdminProduct(deleteTarget); setDeleteTarget(null); loadTab(); }} onCancel={() => setDeleteTarget(null)} />
-      <ConfirmModal open={!!deleteCategoryTarget} title="Hapus Kategori" message="Kategori akan dihapus." confirmLabel="Hapus" danger onConfirm={async () => { await deleteAdminCategory(deleteCategoryTarget); setDeleteCategoryTarget(null); loadTab(); }} onCancel={() => setDeleteCategoryTarget(null)} />
-      <ConfirmModal open={!!deleteBannerTarget} title="Hapus Banner" message="Banner akan dihapus." confirmLabel="Hapus" danger onConfirm={async () => { await deleteAdminBanner(deleteBannerTarget); setDeleteBannerTarget(null); loadTab(); }} onCancel={() => setDeleteBannerTarget(null)} />
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Hapus Produk"
+        message="Produk akan dihapus permanen."
+        confirmLabel="Hapus"
+        danger
+        onConfirm={handleDeleteProduct}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmModal
+        open={!!deleteCategoryTarget}
+        title="Hapus Kategori"
+        message="Kategori akan dihapus. Kategori yang masih dipakai produk tidak bisa dihapus — pindahkan atau hapus produk terlebih dahulu."
+        confirmLabel="Hapus"
+        danger
+        onConfirm={handleDeleteCategory}
+        onCancel={() => setDeleteCategoryTarget(null)}
+      />
+      <ConfirmModal
+        open={!!deleteBannerTarget}
+        title="Hapus Banner"
+        message="Banner akan dihapus."
+        confirmLabel="Hapus"
+        danger
+        onConfirm={handleDeleteBanner}
+        onCancel={() => setDeleteBannerTarget(null)}
+      />
 
       {loading && tab !== 'overview' && <Loading />}
 
@@ -425,12 +485,23 @@ export default function AdminDashboard() {
           </form>
           <div className="surface-card overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-left text-muted"><th className="p-3">Nama</th><th className="p-3">Aksi</th></tr></thead>
+              <thead><tr className="border-b text-left text-muted"><th className="p-3">Nama</th><th className="p-3">Produk</th><th className="p-3">Aksi</th></tr></thead>
               <tbody>
                 {categories.map((cat) => (
                   <tr key={cat.id} className="border-b border-gray-100 dark:border-gray-800">
                     <td className="p-3">{cat.name}</td>
-                    <td className="p-3"><button type="button" onClick={() => setDeleteCategoryTarget(cat.id)} className="btn-danger btn-sm"><Trash2 size={14} /></button></td>
+                    <td className="p-3 text-subtle">{cat.productCount ?? 0}</td>
+                    <td className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteCategoryTarget(cat.id)}
+                        disabled={(cat.productCount ?? 0) > 0}
+                        title={(cat.productCount ?? 0) > 0 ? 'Kategori masih dipakai produk' : 'Hapus kategori'}
+                        className="btn-danger btn-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

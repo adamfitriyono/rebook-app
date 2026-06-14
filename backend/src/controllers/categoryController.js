@@ -23,7 +23,15 @@ exports.getPublicCategories = async (req, res, next) => {
 exports.getAdminCategories = async (req, res, next) => {
   try {
     const categories = await listCategories();
-    res.json({ success: true, data: categories });
+    const data = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await prisma.product.count({
+          where: { category: { equals: category.name, mode: 'insensitive' } },
+        });
+        return { ...category, productCount };
+      }),
+    );
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
