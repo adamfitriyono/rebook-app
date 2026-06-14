@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { computeSellerRating, formatProduct, formatProductsWithSellerRatings, computeSellerRatingsBatch, sellerPublicSelect } = require('../utils/productHelpers');
+const { getLikeCounts, attachLikeCounts } = require('../utils/likeHelpers');
 const { countSuccessfulSales, VERIFIED_SALES_THRESHOLD } = require('../utils/sellerVerification');
 
 exports.getSellerProfile = async (req, res, next) => {
@@ -90,7 +91,9 @@ exports.getSellerProducts = async (req, res, next) => {
     ]);
 
     const ratingMap = await computeSellerRatingsBatch(prisma, products.map((p) => p.sellerId));
-    const data = formatProductsWithSellerRatings(products, ratingMap);
+    let data = formatProductsWithSellerRatings(products, ratingMap);
+    const likeCountMap = await getLikeCounts(prisma, products.map((p) => p.id));
+    data = attachLikeCounts(data, likeCountMap);
 
     res.json({
       success: true,

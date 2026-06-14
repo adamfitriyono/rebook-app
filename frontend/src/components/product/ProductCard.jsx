@@ -5,7 +5,7 @@ import { resolveMediaUrl } from '../../utils/media';
 import { isProductSoldOut } from '../../utils/productStatus';
 import DiscountBadge from './DiscountBadge';
 import SoldBadge from './SoldBadge';
-import WishlistButton from './WishlistButton';
+import LikeButton from './LikeButton';
 import VerifiedSellerBadge from './VerifiedSellerBadge';
 
 export default function ProductCard({ product }) {
@@ -23,9 +23,10 @@ export default function ProductCard({ product }) {
     <Link to={`/product/${product.id}`} className="surface-card overflow-hidden hover:shadow-md dark:hover:shadow-gray-900/50 transition group block">
       <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800 overflow-hidden">
         <DiscountBadge percent={product.discountPercent} />
-        <WishlistButton
+        <LikeButton
           productId={product.id}
-          className="absolute bottom-2 right-2 z-10 bg-white/90 dark:bg-gray-900/90 shadow-sm"
+          likeCount={product.likeCount ?? 0}
+          className="absolute bottom-2 right-2 z-10"
         />
         <img
           src={imageUrl}

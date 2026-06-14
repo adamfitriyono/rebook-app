@@ -3,7 +3,7 @@ import { ZoomIn } from 'lucide-react';
 import { resolveMediaUrl } from '../../utils/media';
 import DiscountBadge from './DiscountBadge';
 import SoldBadge from './SoldBadge';
-import WishlistButton from './WishlistButton';
+import LikeButton from './LikeButton';
 import ImageLightbox from './ImageLightbox';
 
 const FALLBACK = 'https://picsum.photos/400/533';
@@ -14,6 +14,7 @@ export default function ProductImageGallery({
   discountPercent,
   soldOut = false,
   productId,
+  likeCount = 0,
 }) {
   const rawImages = images?.length ? images : [null];
   const fullUrls = rawImages.map((img) => resolveMediaUrl(img, FALLBACK, { width: 800 }));
@@ -39,10 +40,10 @@ export default function ProductImageGallery({
         />
         <DiscountBadge percent={discountPercent} />
         {productId && (
-          <WishlistButton
+          <LikeButton
             productId={productId}
-            size={22}
-            className="absolute bottom-3 right-3 z-10 bg-white/90 dark:bg-gray-900/90 shadow-sm"
+            likeCount={likeCount}
+            className="absolute bottom-3 right-3 z-10"
           />
         )}
         {soldOut && <SoldBadge />}

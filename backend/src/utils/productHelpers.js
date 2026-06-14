@@ -82,6 +82,7 @@ function formatProduct(product, sellerRating = 0) {
     viewCount: product.viewCount ?? 0,
     available: product.available,
     discountPercent: product.discountPercent || null,
+    likeCount: product.likeCount ?? 0,
     createdAt: product.createdAt,
   };
 }

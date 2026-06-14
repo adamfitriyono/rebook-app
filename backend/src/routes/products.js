@@ -1,14 +1,14 @@
 const express = require('express');
 const productController = require('../controllers/productController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, optionalAuthenticate } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
 
 router.get('/categories/list', productController.getCategories);
 router.get('/my-listings', authenticate, authorize('seller'), productController.getMyListings);
-router.get('/', productController.getProducts);
-router.get('/:id', productController.getProductById);
+router.get('/', optionalAuthenticate, productController.getProducts);
+router.get('/:id', optionalAuthenticate, productController.getProductById);
 router.post(
   '/',
   authenticate,

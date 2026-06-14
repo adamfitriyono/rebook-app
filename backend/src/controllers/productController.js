@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { safeDeleteProduct } = require('../utils/productDelete');
 const { computeSellerRating, formatProduct, formatProductsWithSellerRatings, computeSellerRatingsBatch, parseDiscountPercent, parseShippingSpecs, parseOptionalInt, parseOptionalDecimal, sellerPublicSelect } = require('../utils/productHelpers');
+const { getLikeCounts, getLikedProductIdSet, getProductLikeCount, attachLikeCounts, attachLikedByMe } = require('../utils/likeHelpers');
 const { validateCategoryName } = require('./categoryController');
 const { uploadImages, DEFAULT_PRODUCT_IMAGE } = require('../utils/cloudinaryUpload');
 
@@ -50,6 +51,13 @@ exports.getProducts = async (req, res, next) => {
 
     const ratingMap = await computeSellerRatingsBatch(prisma, products.map((p) => p.sellerId));
     let formatted = formatProductsWithSellerRatings(products, ratingMap);
+    const likeCountMap = await getLikeCounts(prisma, products.map((p) => p.id));
+    formatted = attachLikeCounts(formatted, likeCountMap);
+
+    if (req.user?.id) {
+      const likedIds = await getLikedProductIdSet(prisma, req.user.id, products.map((p) => p.id));
+      formatted = attachLikedByMe(formatted, likedIds);
+    }
 
     if (sort === 'rating') {
       formatted = formatted.sort((a, b) => b.rating - a.rating);
@@ -95,6 +103,14 @@ exports.getProductById = async (req, res, next) => {
 
     const sellerRating = await computeSellerRating(prisma, product.sellerId);
     const formatted = formatProduct(product, sellerRating);
+    formatted.likeCount = await getProductLikeCount(prisma, id);
+
+    if (req.user?.id) {
+      const liked = await prisma.wishlistItem.findUnique({
+        where: { userId_productId: { userId: req.user.id, productId: id } },
+      });
+      formatted.likedByMe = Boolean(liked);
+    }
 
     formatted.reviews = product.reviews.map((r) => ({
       id: r.id,

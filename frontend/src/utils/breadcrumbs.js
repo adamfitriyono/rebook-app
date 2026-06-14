@@ -4,7 +4,6 @@ export const CRUMBS = {
   cart: { label: 'Keranjang', to: '/cart' },
   checkout: { label: 'Checkout', to: '/checkout' },
   orders: { label: 'Pesanan', to: '/orders' },
-  wishlist: { label: 'Wishlist', to: '/wishlist' },
   followedStores: { label: 'Toko Diikuti', to: '/followed-stores' },
   profile: { label: 'Profil', to: '/profile' },
   disputes: { label: 'Dispute', to: '/disputes' },

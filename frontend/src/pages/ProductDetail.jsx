@@ -191,6 +191,7 @@ export default function ProductDetail() {
           discountPercent={product.discountPercent}
           soldOut={product.stock <= 0}
           productId={product.id}
+          likeCount={product.likeCount ?? 0}
         />
 
         <div className="flex flex-col gap-4 min-w-0">

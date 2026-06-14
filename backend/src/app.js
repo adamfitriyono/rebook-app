@@ -45,7 +45,7 @@ app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/banners', require('./routes/banners'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/disputes', require('./routes/disputes'));
-app.use('/api/wishlist', require('./routes/wishlist'));
+app.use('/api/likes', require('./routes/likes'));
 app.use('/api/seller-follows', require('./routes/sellerFollows'));
 
 app.get('/health', (req, res) => {

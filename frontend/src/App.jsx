@@ -18,7 +18,6 @@ import OrderConfirmation from './pages/OrderConfirmation';
 import OrderHistory from './pages/OrderHistory';
 import OrderDetail from './pages/OrderDetail';
 import MyDisputes from './pages/MyDisputes';
-import Wishlist from './pages/Wishlist';
 import FollowedStores from './pages/FollowedStores';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -26,7 +25,7 @@ import Profile from './pages/Profile';
 import SellerStore from './pages/SellerStore';
 import NotFound from './pages/NotFound';
 import { useAuthStore, useCartStore } from './store/useAuthStore';
-import { useWishlistStore } from './store/useWishlistStore';
+import { useLikeStore } from './store/useLikeStore';
 import { useSellerFollowStore } from './store/useSellerFollowStore';
 
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
@@ -41,16 +40,16 @@ function LazyPage({ children }) {
 function AppContent() {
   const init = useAuthStore((s) => s.init);
   const fetchCart = useCartStore((s) => s.fetchCart);
-  const fetchWishlistIds = useWishlistStore((s) => s.fetchIds);
+  const fetchLikeIds = useLikeStore((s) => s.fetchIds);
   const fetchFollowIds = useSellerFollowStore((s) => s.fetchIds);
 
   useEffect(() => {
     init().then(() => {
       fetchCart();
-      fetchWishlistIds();
+      fetchLikeIds();
       fetchFollowIds();
     });
-  }, [init, fetchCart, fetchWishlistIds, fetchFollowIds]);
+  }, [init, fetchCart, fetchLikeIds, fetchFollowIds]);
 
   return (
     <div className="min-h-screen flex flex-col bg-light dark:bg-gray-950">
@@ -73,7 +72,7 @@ function AppContent() {
           <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="/order-confirmation/group/:checkoutGroupId" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
           <Route path="/order-confirmation/:id" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
-          <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+          <Route path="/wishlist" element={<Navigate to="/catalog" replace />} />
           <Route path="/followed-stores" element={<ProtectedRoute><FollowedStores /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
