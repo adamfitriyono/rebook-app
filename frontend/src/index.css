@@ -91,12 +91,34 @@ body {
     @apply bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.25s ease-out;
+  }
+
   .info-panel {
     @apply bg-light dark:bg-gray-800 p-4 rounded-lg text-sm text-muted;
   }
 
   .step-inactive {
     @apply bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 
