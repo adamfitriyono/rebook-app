@@ -53,9 +53,12 @@ export default function SavedAddressForm({
           value={values.address || ''}
           onChange={(text) => update('address', text)}
           onSelect={(item) => {
-            update('address', item.addressLine || item.label);
-            if (item.city) update('city', item.city);
-            if (item.province) update('province', item.province);
+            onChange({
+              ...values,
+              address: item.addressLine || item.label || values.address,
+              city: item.city || values.city,
+              province: item.province || values.province,
+            });
           }}
           placeholder="Ketik nama jalan, kelurahan, atau landmark..."
         />
