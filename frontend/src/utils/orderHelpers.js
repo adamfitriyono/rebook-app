@@ -19,7 +19,7 @@ export function canPayOrder(order) {
 }
 
 export function canMarkShipped(order) {
-  return order?.status === 'paid';
+  return order?.status === 'paid' && order?.paymentStatus === 'paid';
 }
 
 const STATUS_STEP_INDEX = {

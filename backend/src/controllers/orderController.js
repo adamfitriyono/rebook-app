@@ -277,8 +277,23 @@ exports.createOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Pilih minimal satu produk untuk checkout' });
     }
 
+    for (const item of itemsToOrder) {
+      const product = item.product;
+      if (!product.available) {
+        return res.status(400).json({
+          success: false,
+          error: `Produk "${product.title}" tidak tersedia`,
+        });
+      }
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          error: `Stok "${product.title}" tidak mencukupi (tersisa ${product.stock})`,
+        });
+      }
+    }
+
     const checkoutGroupId = generateCheckoutGroupId();
-    const checkoutItemIds = itemsToOrder.map((item) => item.id);
     const sellerGroups = groupCartItemsBySeller(itemsToOrder);
 
     const sellerPayloads = await Promise.all(
@@ -310,10 +325,6 @@ exports.createOrder = async (req, res, next) => {
         });
         orders.push({ order, breakdown: payload.breakdown, sellerId: payload.sellerId });
       }
-
-      await tx.cartItem.deleteMany({
-        where: { id: { in: checkoutItemIds }, cartId: cart.id },
-      });
 
       return orders;
     });
@@ -357,7 +368,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       if (!ownsItem) {
         return res.status(403).json({ success: false, error: 'Forbidden' });
       }
-      if (status !== 'shipped' || order.status !== 'paid') {
+      if (status !== 'shipped' || order.status !== 'paid' || order.paymentStatus !== 'paid') {
         return res.status(400).json({
           success: false,
           error: 'Seller can only mark paid orders as shipped',
@@ -404,6 +415,13 @@ exports.confirmOrder = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         error: 'Order can only be confirmed when status is shipped',
+      });
+    }
+
+    if (order.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        error: 'Order must be paid before confirming delivery',
       });
     }
 

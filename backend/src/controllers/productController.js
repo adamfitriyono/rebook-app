@@ -1,4 +1,5 @@
 const prisma = require('../config/database');
+const { safeDeleteProduct } = require('../utils/productDelete');
 const { computeSellerRating, formatProduct, formatProductsWithSellerRatings, computeSellerRatingsBatch, parseDiscountPercent, parseShippingSpecs, parseOptionalInt, parseOptionalDecimal, sellerPublicSelect } = require('../utils/productHelpers');
 const { validateCategoryName } = require('./categoryController');
 const { uploadImages, DEFAULT_PRODUCT_IMAGE } = require('../utils/cloudinaryUpload');
@@ -282,7 +283,7 @@ exports.deleteProduct = async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'You can only delete your own products' });
     }
 
-    await prisma.product.delete({ where: { id } });
+    await safeDeleteProduct(prisma, id);
 
     res.json({ success: true, message: 'Product deleted successfully' });
   } catch (err) {

@@ -10,6 +10,7 @@ export const CRUMBS = {
   disputes: { label: 'Dispute', to: '/disputes' },
   messages: { label: 'Pesan', to: '/messages' },
   sellerCentre: { label: 'Seller Centre', to: '/seller' },
+  sellerOrders: { label: 'Pesanan', to: '/seller/orders' },
   sellerListings: { label: 'Listing Saya', to: '/seller/listings' },
   admin: { label: 'Admin Panel', to: '/admin' },
   buyerProtection: { label: 'Perlindungan Pembeli', to: '/perlindungan-pembeli' },
@@ -52,13 +53,29 @@ export function productTrail(product) {
 }
 
 export function sellerCentreTrail(pathname) {
-  const segment = pathname.replace(/^\/seller\/?/, '').split('/')[0] || '';
+  const parts = pathname.replace(/^\/seller\/?/, '').split('/').filter(Boolean);
+  const segment = parts[0] || '';
   const items = homeTrail(CRUMBS.sellerCentre);
   const label = SELLER_SEGMENT_LABELS[segment];
+
   if (label) {
-    items.push({ label });
+    if (segment === 'orders' && parts[1]) {
+      items.push({ label, to: '/seller/orders' });
+      items.push({ label: `Pesanan #${parts[1]}` });
+    } else {
+      items.push({ label });
+    }
   }
+
   return items;
+}
+
+export function sellerOrderTrail(orderId) {
+  return homeTrail(
+    CRUMBS.sellerCentre,
+    CRUMBS.sellerOrders,
+    { label: `Pesanan #${orderId}` },
+  );
 }
 
 export function sellerStoreTrail(sellerName) {

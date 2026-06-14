@@ -1,8 +1,11 @@
 const prisma = require('../config/database');
 const { isValidPaymentMethod } = require('../utils/paymentMethods');
+const { decrementStockForOrder, clearCartItemsForOrder } = require('../utils/paymentHelpers');
 
 async function payOrder(tx, order, userId, paymentMethod, transactionIdSuffix = '') {
   const transactionId = `TXN-${Date.now()}${transactionIdSuffix}`;
+
+  await decrementStockForOrder(tx, order.id);
 
   const transaction = await tx.transaction.create({
     data: {
@@ -20,16 +23,7 @@ async function payOrder(tx, order, userId, paymentMethod, transactionIdSuffix = 
     data: { paymentStatus: 'paid', status: 'paid' },
   });
 
-  const orderItems = await tx.orderItem.findMany({ where: { orderId: order.id } });
-  for (const item of orderItems) {
-    await tx.product.update({
-      where: { id: item.productId },
-      data: {
-        sold: { increment: item.quantity },
-        stock: { decrement: item.quantity },
-      },
-    });
-  }
+  await clearCartItemsForOrder(tx, userId, order.id);
 
   return transaction;
 }
@@ -108,9 +102,17 @@ exports.processPayment = async (req, res, next) => {
     if (order.paymentStatus === 'paid') {
       return res.status(400).json({ success: false, error: 'Order already paid' });
     }
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: 'Cannot pay cancelled order' });
+    }
+
+    const orderWithItems = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
 
     const result = await prisma.$transaction(async (tx) => {
-      return payOrder(tx, order, req.user.id, paymentMethod);
+      return payOrder(tx, orderWithItems, req.user.id, paymentMethod);
     });
 
     res.json({

@@ -144,7 +144,14 @@ export default function SellerOrders() {
                           {order.buyer?.fullName} &middot; {formatDate(order.createdAt)}
                         </p>
                       </div>
-                      <StatusBadge status={order.status} />
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {order.paymentStatus !== 'paid' && (
+                          <span className="text-xs font-medium bg-amber-100 text-amber-800 px-2 py-0.5 rounded-lg">
+                            Menunggu Pembayaran
+                          </span>
+                        )}
+                        <StatusBadge status={order.status} />
+                      </div>
                     </div>
 
                     <OrderStatusTracker status={order.status} compact />
@@ -164,7 +171,7 @@ export default function SellerOrders() {
                     )}
 
                     <div className="flex flex-wrap gap-2 mt-4">
-                      <Link to={`/orders/${order.orderId}`} className="btn-outline btn-sm">
+                      <Link to={`/seller/orders/${order.orderId}`} className="btn-outline btn-sm">
                         <ExternalLink size={14} />
                         Detail
                       </Link>

@@ -40,7 +40,7 @@ export default function PackingSlipPrintable({ order, onClose }) {
             <p className="text-sm text-subtle">Label Pengiriman Paket</p>
           </div>
           <div className="text-right text-sm">
-            <p className="font-semibold text-heading">Pesanan #{order.orderId}</p>
+            <p className="font-semibold text-heading">Pesanan #{order.orderId || order.id}</p>
             <p className="text-subtle">{formatDate(order.createdAt)}</p>
           </div>
         </div>

@@ -9,6 +9,7 @@ import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import { getOrders, confirmOrder, cancelOrder } from '../services/orders';
 import { processPayment, processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
+import { useCartStore } from '../store/useAuthStore';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { resolveMediaUrl } from '../utils/media';
 import {
@@ -22,6 +23,7 @@ import Breadcrumb from '../components/common/Breadcrumb';
 import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
 
 export default function OrderHistory() {
+  const fetchCart = useCartStore((s) => s.fetchCart);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -63,6 +65,7 @@ export default function OrderHistory() {
         });
       }
       toast.success('Pembayaran berhasil!');
+      await fetchCart();
       fetchOrders();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Pembayaran gagal');
@@ -74,8 +77,8 @@ export default function OrderHistory() {
   const handleCancel = async () => {
     if (!cancelTarget) return;
     try {
-      setActionId(cancelTarget);
-      await cancelOrder(cancelTarget);
+      setActionId(cancelTarget.id);
+      await cancelOrder(cancelTarget.id);
       toast.success('Pesanan dibatalkan');
       setCancelTarget(null);
       fetchOrders();
@@ -85,6 +88,10 @@ export default function OrderHistory() {
       setActionId(null);
     }
   };
+
+  const cancelOrderForModal = cancelTarget
+    ? orders.find((o) => o.id === cancelTarget)
+    : null;
 
   const handleConfirm = async (orderId) => {
     try {
@@ -104,7 +111,11 @@ export default function OrderHistory() {
       <ConfirmModal
         open={!!cancelTarget}
         title="Batalkan Pesanan"
-        message="Apakah Anda yakin ingin membatalkan pesanan ini?"
+        message={
+          cancelOrderForModal?.checkoutGroupId
+            ? 'Pesanan ini bagian dari checkout multi-penjual. Hanya pesanan ini yang dibatalkan; pesanan lain dalam grup checkout tetap aktif. Lanjutkan?'
+            : 'Apakah Anda yakin ingin membatalkan pesanan ini?'
+        }
         confirmLabel="Batalkan"
         danger
         onConfirm={handleCancel}

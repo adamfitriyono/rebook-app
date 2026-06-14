@@ -8,8 +8,9 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import InvoicePrintable from '../components/order/InvoicePrintable';
 import { getOrderById, confirmOrder, cancelOrder } from '../services/orders';
-import { processPayment } from '../services/payments';
+import { processPayment, processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
+import { useCartStore } from '../store/useAuthStore';
 import { formatPrice, formatDate } from '../utils/formatters';
 import { resolveMediaUrl } from '../utils/media';
 import {
@@ -19,12 +20,14 @@ import {
   canPayOrder,
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
+import { formatPaymentMethod } from '../utils/paymentMethods';
 import { createDispute } from '../services/disputes';
 
 export default function OrderDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const fetchCart = useCartStore((s) => s.fetchCart);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -56,12 +59,20 @@ export default function OrderDetail() {
   const handlePay = async () => {
     try {
       setActionLoading(true);
-      await processPayment({
-        orderId: order.id,
-        amount: order.totalPrice,
-        paymentMethod: 'qris',
-      });
+      if (order.checkoutGroupId) {
+        await processCheckoutPayment({
+          checkoutGroupId: order.checkoutGroupId,
+          paymentMethod: 'qris',
+        });
+      } else {
+        await processPayment({
+          orderId: order.id,
+          amount: order.totalPrice,
+          paymentMethod: 'qris',
+        });
+      }
       toast.success('Pembayaran berhasil!');
+      await fetchCart();
       loadOrder();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Pembayaran gagal');
@@ -133,7 +144,11 @@ export default function OrderDetail() {
       <ConfirmModal
         open={showCancelModal}
         title="Batalkan Pesanan"
-        message="Apakah Anda yakin ingin membatalkan pesanan ini?"
+        message={
+          order.checkoutGroupId
+            ? 'Pesanan ini bagian dari checkout multi-penjual. Hanya pesanan ini yang dibatalkan; pesanan lain dalam grup checkout tetap aktif. Lanjutkan?'
+            : 'Apakah Anda yakin ingin membatalkan pesanan ini?'
+        }
         confirmLabel="Batalkan"
         danger
         onConfirm={handleCancel}
@@ -155,7 +170,7 @@ export default function OrderDetail() {
       <div className="surface-card p-6 mb-6">
         <h2 className="font-semibold mb-4">Lacak Pesanan</h2>
         <OrderStatusTracker status={order.status} />
-        {order.trackingNumber && ['shipped', 'delivered'].includes(order.status) && (
+        {order.trackingNumber && ['shipped', 'delivered', 'completed'].includes(order.status) && (
           <div className="mt-4 flex items-center gap-2 text-sm bg-primary/10 text-primary px-4 py-3 rounded-lg">
             <Truck size={18} />
             <span>

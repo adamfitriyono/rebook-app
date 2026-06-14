@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { logAdminAction } = require('../utils/adminAudit');
+const { safeDeleteProduct } = require('../utils/productDelete');
 const { countSuccessfulSales, VERIFIED_SALES_THRESHOLD } = require('../utils/sellerVerification');
 
 exports.getStats = async (req, res, next) => {
@@ -245,7 +246,7 @@ exports.deleteProduct = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
 
-    await prisma.product.delete({ where: { id } });
+    await safeDeleteProduct(prisma, id);
 
     await logAdminAction(req.user.id, 'product.delete', { entityType: 'product', entityId: id });
 

@@ -18,7 +18,8 @@ export const ORDER_STATUS_FILTERS = [
   { value: 'pending', label: 'Menunggu' },
   { value: 'paid', label: 'Dibayar' },
   { value: 'shipped', label: 'Dikirim' },
-  { value: 'delivered', label: 'Selesai' },
+  { value: 'delivered', label: 'Diterima' },
+  { value: 'cancelled', label: 'Dibatalkan' },
 ];
 
 export const DISPUTE_STATUS_LABELS = {
