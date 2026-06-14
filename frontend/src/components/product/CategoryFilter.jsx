@@ -36,7 +36,7 @@ export default function CategoryFilter({ selected, onSelect }) {
   if (loading) {
     return (
       <>
-        <div className="flex flex-nowrap gap-2 mb-6 overflow-hidden md:hidden">
+        <div className="flex flex-nowrap gap-2 mb-6 overflow-hidden min-w-0 max-w-full md:hidden">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-9 w-20 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse shrink-0" />
           ))}
@@ -56,8 +56,8 @@ export default function CategoryFilter({ selected, onSelect }) {
   return (
     <>
       {/* Mobile: limited chips + Lainnya */}
-      <div className="md:hidden mb-6">
-        <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+      <div className="md:hidden mb-6 min-w-0 max-w-full">
+        <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide pb-1 min-w-0 max-w-full">
           <CategoryChip
             label="Semua"
             active={!selected}
