@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, Users } from 'lucide-react';
 import ProductGrid from '../components/product/ProductGrid';
 import Loading from '../components/common/Loading';
 import VerifiedSellerBadge from '../components/product/VerifiedSellerBadge';
@@ -80,6 +80,10 @@ export default function SellerStore() {
                 <span className="flex items-center gap-1">
                   <Star size={14} className="fill-yellow-400 text-yellow-400" />
                   {profile.rating || 0}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users size={14} />
+                  {profile.followerCount ?? 0} pengikut
                 </span>
               </div>
               <p className="text-sm text-subtle mt-1">

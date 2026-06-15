@@ -38,8 +38,7 @@ exports.register = async (req, res, next) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const validRoles = ['buyer', 'seller'];
-    const userRole = validRoles.includes(role) ? role : 'buyer';
+    const userRole = 'buyer';
 
     const user = await prisma.user.create({
       data: {

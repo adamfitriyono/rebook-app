@@ -38,7 +38,10 @@ async function buildSellerStats(sellerId) {
       .map((item) => item.order.id)
   );
 
-  const successfulSales = await countSuccessfulSales(prisma, sellerId);
+  const [successfulSales, followerCount] = await Promise.all([
+    countSuccessfulSales(prisma, sellerId),
+    prisma.sellerFollow.count({ where: { sellerId } }),
+  ]);
 
   return {
     totalListings: products.length,
@@ -50,6 +53,7 @@ async function buildSellerStats(sellerId) {
     pendingOrders: pendingOrderIds.size,
     paidOrderCount: new Set(paidItems.map((i) => i.order.id)).size,
     successfulSales,
+    followerCount,
     verifiedSalesRequired: VERIFIED_SALES_THRESHOLD,
   };
 }

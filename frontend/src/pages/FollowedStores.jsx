@@ -31,7 +31,7 @@ export default function FollowedStores() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <Breadcrumb items={homeTrail(CRUMBS.books, CRUMBS.followedStores)} />
+      <Breadcrumb items={homeTrail(CRUMBS.profile, CRUMBS.followedStores)} />
       <h1 className="text-2xl font-bold text-heading mb-6">Toko Diikuti</h1>
 
       {stores.length === 0 ? (

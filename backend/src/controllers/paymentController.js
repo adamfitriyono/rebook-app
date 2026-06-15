@@ -85,7 +85,7 @@ exports.processCheckoutPayment = async (req, res, next) => {
 
 exports.processPayment = async (req, res, next) => {
   try {
-    const { orderId, amount, paymentMethod } = req.body;
+    const { orderId, paymentMethod } = req.body;
 
     if (!paymentMethod || !isValidPaymentMethod(paymentMethod)) {
       return res.status(400).json({ success: false, error: 'Metode pembayaran tidak valid' });
@@ -133,8 +133,16 @@ exports.processPayment = async (req, res, next) => {
 exports.getPaymentStatus = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.orderId, 10);
-    const transaction = await prisma.transaction.findUnique({ where: { orderId } });
 
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    if (order.buyerId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const transaction = await prisma.transaction.findUnique({ where: { orderId } });
     if (!transaction) {
       return res.status(404).json({ success: false, error: 'Payment not found' });
     }
@@ -158,8 +166,16 @@ exports.getPaymentStatus = async (req, res, next) => {
 exports.confirmPayment = async (req, res, next) => {
   try {
     const orderId = parseInt(req.params.orderId, 10);
-    const transaction = await prisma.transaction.findUnique({ where: { orderId } });
 
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    if (order.buyerId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    const transaction = await prisma.transaction.findUnique({ where: { orderId } });
     if (!transaction) {
       return res.status(404).json({ success: false, error: 'Payment not found' });
     }

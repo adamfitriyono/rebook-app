@@ -6,7 +6,7 @@ export const CRUMBS = {
   orders: { label: 'Pesanan', to: '/orders' },
   followedStores: { label: 'Toko Diikuti', to: '/followed-stores' },
   profile: { label: 'Profil', to: '/profile' },
-  disputes: { label: 'Dispute', to: '/disputes' },
+  disputes: { label: 'Pengaduan', to: '/pengaduan' },
   messages: { label: 'Pesan', to: '/messages' },
   sellerCentre: { label: 'Seller Centre', to: '/seller' },
   sellerOrders: { label: 'Pesanan', to: '/seller/orders' },
@@ -16,10 +16,10 @@ export const CRUMBS = {
 };
 
 export const SELLER_SEGMENT_LABELS = {
-  orders: 'Pesanan',
-  listings: 'Listing Saya',
-  sell: 'Jual Buku',
-  stats: 'Statistik',
+  orders: { label: 'Pesanan', to: '/seller/orders' },
+  listings: { label: 'Listing Saya', to: '/seller/listings' },
+  sell: { label: 'Jual Buku', to: '/seller/sell' },
+  stats: { label: 'Statistik', to: '/seller/stats' },
 };
 
 /** @param {...{ label: string, to?: string }} items */
@@ -55,14 +55,14 @@ export function sellerCentreTrail(pathname) {
   const parts = pathname.replace(/^\/seller\/?/, '').split('/').filter(Boolean);
   const segment = parts[0] || '';
   const items = homeTrail(CRUMBS.sellerCentre);
-  const label = SELLER_SEGMENT_LABELS[segment];
+  const segmentMeta = SELLER_SEGMENT_LABELS[segment];
 
-  if (label) {
-    if (segment === 'orders' && parts[1]) {
-      items.push({ label, to: '/seller/orders' });
-      items.push({ label: `Pesanan #${parts[1]}` });
+  if (segmentMeta) {
+    if (parts[1]) {
+      items.push({ label: segmentMeta.label, to: segmentMeta.to });
+      items.push({ label: `${segmentMeta.label} #${parts[1]}` });
     } else {
-      items.push({ label });
+      items.push({ label: segmentMeta.label });
     }
   }
 

@@ -13,7 +13,7 @@ export default function Breadcrumb({ items = [], className = '' }) {
           const showLink = Boolean(item.to) && !isLast;
 
           return (
-            <li key={`${item.label}-${index}`} className="inline-flex items-center gap-1.5 min-w-0">
+              <li key={index} className="inline-flex items-center gap-1.5 min-w-0">
               {index > 0 && (
                 <span className="text-subtle select-none" aria-hidden="true">
                   &gt;

@@ -450,10 +450,19 @@ exports.impersonateUser = async (req, res, next) => {
   }
 };
 
+const ALLOWED_ORDER_STATUSES = ['pending', 'paid', 'shipped', 'delivered', 'completed', 'cancelled'];
+
 exports.patchOrderStatus = async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     const { status, trackingNumber } = req.body;
+
+    if (status !== undefined && !ALLOWED_ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Status tidak valid. Nilai yang diizinkan: ${ALLOWED_ORDER_STATUSES.join(', ')}`,
+      });
+    }
 
     const data = {};
     if (status) data.status = status;

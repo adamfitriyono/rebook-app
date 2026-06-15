@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import PromoBanner from '../components/common/PromoBanner';
 import CategoryFilter from '../components/product/CategoryFilter';
 import ProductGrid from '../components/product/ProductGrid';
@@ -14,8 +14,10 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [category, setCategory] = useState('');
+  const requestIdRef = useRef(0);
 
   const fetchProducts = useCallback(async (pageNum, replace = false) => {
+    const requestId = (requestIdRef.current += 1);
     try {
       if (replace) setLoading(true);
       else setLoadingMore(true);
@@ -24,16 +26,21 @@ export default function Home() {
       if (category) params.category = category;
 
       const { data } = await getProducts(params);
-      setProducts((prev) => (replace ? data.data : [...prev, ...data.data]));
 
+      if (requestId !== requestIdRef.current) return;
+
+      setProducts((prev) => (replace ? data.data : [...prev, ...data.data]));
       const { page: currentPage, pages } = data.pagination;
       setPage(currentPage);
       setHasMore(currentPage < pages);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error(err);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   }, [category]);
 

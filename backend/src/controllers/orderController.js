@@ -279,6 +279,12 @@ exports.createOrder = async (req, res, next) => {
 
     for (const item of itemsToOrder) {
       const product = item.product;
+      if (product.sellerId === req.user.id) {
+        return res.status(400).json({
+          success: false,
+          error: `Tidak bisa membeli produk milik sendiri ("${product.title}")`,
+        });
+      }
       if (!product.available) {
         return res.status(400).json({
           success: false,
@@ -292,6 +298,17 @@ exports.createOrder = async (req, res, next) => {
         });
       }
     }
+
+    const staleThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await prisma.order.updateMany({
+      where: {
+        buyerId: req.user.id,
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        createdAt: { lt: staleThreshold },
+      },
+      data: { status: 'cancelled' },
+    });
 
     const checkoutGroupId = generateCheckoutGroupId();
     const sellerGroups = groupCartItemsBySeller(itemsToOrder);
@@ -427,7 +444,7 @@ exports.confirmOrder = async (req, res, next) => {
 
     const updated = await prisma.order.update({
       where: { id },
-      data: { status: 'delivered' },
+      data: { status: 'completed' },
     });
 
     await verifySellersForDeliveredOrder(prisma, id);

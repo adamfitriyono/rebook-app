@@ -40,6 +40,17 @@ async function decrementStockForOrder(tx, orderId) {
       err.status = 400;
       throw err;
     }
+
+    const afterUpdate = await tx.product.findUnique({
+      where: { id: item.productId },
+      select: { stock: true },
+    });
+    if (afterUpdate && afterUpdate.stock === 0) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { available: false },
+      });
+    }
   }
 }
 

@@ -86,12 +86,19 @@ exports.updateReview = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Review not found' });
     }
 
+    const updateData = {};
+    if (rating !== undefined) {
+      const parsedRating = parseInt(rating, 10);
+      if (Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return res.status(400).json({ success: false, error: 'Rating harus antara 1 dan 5' });
+      }
+      updateData.rating = parsedRating;
+    }
+    if (comment !== undefined) updateData.comment = comment;
+
     const updated = await prisma.review.update({
       where: { id },
-      data: {
-        ...(rating && { rating: parseInt(rating, 10) }),
-        ...(comment !== undefined && { comment }),
-      },
+      data: updateData,
     });
 
     res.json({ success: true, message: 'Review updated', data: updated });
@@ -132,6 +139,13 @@ exports.reportReview = async (req, res, next) => {
 
     if (review.authorId === req.user.id) {
       return res.status(400).json({ success: false, error: 'Tidak bisa melaporkan ulasan sendiri' });
+    }
+
+    const existingReport = await prisma.reviewReport.findFirst({
+      where: { reviewId: id, reporterId: req.user.id },
+    });
+    if (existingReport) {
+      return res.status(400).json({ success: false, error: 'Anda sudah melaporkan ulasan ini' });
     }
 
     const report = await prisma.reviewReport.create({

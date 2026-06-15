@@ -83,8 +83,8 @@ export default function Navbar() {
               <Link to="/orders" onClick={closeMobile} className="btn-ghost">
                 Pesanan
               </Link>
-              <Link to="/disputes" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
-                <LifeBuoy size={18} /> Dispute
+              <Link to="/pengaduan" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
+                <LifeBuoy size={18} /> Pengaduan
               </Link>
               <Link to="/messages" onClick={closeMobile} className="btn-ghost flex items-center gap-2">
                 <MessageCircle size={18} /> Pesan
@@ -189,8 +189,8 @@ export default function Navbar() {
                         <Link to="/orders" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
                           Pesanan
                         </Link>
-                        <Link to="/disputes" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
-                          Dispute
+                        <Link to="/pengaduan" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm">
+                          Pengaduan
                         </Link>
                         <Link to="/messages" className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm flex items-center justify-between">
                           Pesan

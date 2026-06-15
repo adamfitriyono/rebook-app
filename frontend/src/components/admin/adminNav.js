@@ -23,7 +23,7 @@ export const ADMIN_NAV = [
   { key: 'reviews', label: 'Ulasan', icon: Star },
   { key: 'reports', label: 'Laporan', icon: Flag },
   { key: 'banners', label: 'Banner', icon: Image },
-  { key: 'disputes', label: 'Dispute', icon: LifeBuoy },
+  { key: 'disputes', label: 'Pengaduan', icon: LifeBuoy },
   { key: 'audit', label: 'Audit Log', icon: ScrollText },
   { key: 'settings', label: 'Pengaturan', icon: Settings },
 ];

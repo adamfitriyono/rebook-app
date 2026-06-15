@@ -26,13 +26,13 @@ export default function MyDisputes() {
   return (
     <div className="max-w-content mx-auto px-4 py-8">
       <Breadcrumb items={homeTrail(CRUMBS.orders, CRUMBS.disputes)} />
-      <h1 className="text-2xl font-bold text-heading mb-6">Dispute Saya</h1>
+      <h1 className="text-2xl font-bold text-heading mb-6">Pengaduan Saya</h1>
 
       {disputes.length === 0 ? (
         <EmptyState
           icon={LifeBuoy}
-          title="Belum Ada Dispute"
-          description="Jika ada masalah dengan pesanan, ajukan dispute dari halaman detail pesanan."
+          title="Belum Ada Pengaduan"
+          description="Jika ada masalah dengan pesanan, ajukan pengaduan dari halaman detail pesanan."
           cta="Riwayat Pesanan"
           to="/orders"
         />

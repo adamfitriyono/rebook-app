@@ -25,7 +25,7 @@ exports.getSellerProfile = async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Toko tidak ditemukan' });
     }
 
-    const [totalProducts, totalSold, rating, successfulSales] = await Promise.all([
+    const [totalProducts, totalSold, rating, successfulSales, followerCount] = await Promise.all([
       prisma.product.count({ where: { sellerId: id } }),
       prisma.product.aggregate({
         where: { sellerId: id },
@@ -33,6 +33,7 @@ exports.getSellerProfile = async (req, res, next) => {
       }),
       computeSellerRating(prisma, id),
       countSuccessfulSales(prisma, id),
+      prisma.sellerFollow.count({ where: { sellerId: id } }),
     ]);
 
     res.json({
@@ -43,6 +44,7 @@ exports.getSellerProfile = async (req, res, next) => {
         rating,
         totalProducts,
         totalSold: totalSold._sum.sold || 0,
+        followerCount,
         successfulSales,
         verifiedSalesRequired: VERIFIED_SALES_THRESHOLD,
       },

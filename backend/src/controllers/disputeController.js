@@ -31,6 +31,20 @@ exports.createDispute = async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Forbidden' });
     }
 
+    if (order.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        error: 'Dispute hanya bisa dibuat untuk pesanan yang sudah dibayar',
+      });
+    }
+
+    if (['pending', 'cancelled'].includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Dispute tidak bisa dibuat untuk pesanan yang dibatalkan atau belum diproses',
+      });
+    }
+
     const dispute = await prisma.dispute.create({
       data: {
         orderId: oid,

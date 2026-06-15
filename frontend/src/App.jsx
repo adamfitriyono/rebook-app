@@ -76,7 +76,7 @@ function AppContent() {
           <Route path="/followed-stores" element={<ProtectedRoute><FollowedStores /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-          <Route path="/disputes" element={<ProtectedRoute><MyDisputes /></ProtectedRoute>} />
+          <Route path="/pengaduan" element={<ProtectedRoute><MyDisputes /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/seller/*" element={<LazyPage><SellerCentreRoutes /></LazyPage>} />
           <Route path="/my-listings" element={<Navigate to="/seller/listings" replace />} />

@@ -29,6 +29,7 @@ export const useLikeStore = create((set, get) => ({
 
   seedCount: (productId, count) => {
     if (count === undefined) return;
+    if (get().counts[productId] !== undefined) return;
     set({ counts: { ...get().counts, [productId]: count } });
   },
 

@@ -45,12 +45,12 @@ export default function SellerOrderDetail() {
         subject: disputeSubject.trim(),
         description: disputeDescription.trim(),
       });
-      toast.success('Dispute diajukan. Tim support akan meninjau.');
+      toast.success('Pengaduan diajukan. Tim support akan meninjau.');
       setDisputeSubject('');
       setDisputeDescription('');
-      navigate('/disputes');
+      navigate('/pengaduan');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Gagal mengajukan dispute');
+      toast.error(err.response?.data?.error || 'Gagal mengajukan pengaduan');
     } finally {
       setDisputeLoading(false);
     }
@@ -168,9 +168,9 @@ export default function SellerOrderDetail() {
 
       {['paid', 'shipped', 'delivered', 'completed'].includes(order.status) && (
         <div className="surface-card p-6 mb-6">
-          <h3 className="font-semibold mb-3">Ajukan Dispute / Support</h3>
+          <h3 className="font-semibold mb-3">Ajukan Pengaduan</h3>
           <p className="text-sm text-subtle mb-4">
-            Ada masalah dengan pesanan ini? Ajukan dispute dan tim admin akan meninjau.
+            Ada masalah dengan pesanan ini? Ajukan pengaduan dan tim admin akan meninjau.
           </p>
           <form onSubmit={handleSubmitDispute} className="space-y-3 max-w-lg">
             <input
@@ -189,7 +189,7 @@ export default function SellerOrderDetail() {
               required
             />
             <button type="submit" disabled={disputeLoading} className="btn-primary">
-              {disputeLoading ? 'Mengirim...' : 'Ajukan Dispute'}
+              {disputeLoading ? 'Mengirim...' : 'Ajukan Pengaduan'}
             </button>
           </form>
         </div>

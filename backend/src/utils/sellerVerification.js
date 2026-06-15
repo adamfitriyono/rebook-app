@@ -1,16 +1,14 @@
 const VERIFIED_SALES_THRESHOLD = 10;
 
 async function countSuccessfulSales(prismaClient, sellerId) {
-  return prismaClient.order.count({
+  const result = await prismaClient.orderItem.aggregate({
     where: {
-      status: 'delivered',
-      items: {
-        some: {
-          product: { sellerId },
-        },
-      },
+      product: { sellerId },
+      order: { status: { in: ['delivered', 'completed'] } },
     },
+    _sum: { quantity: true },
   });
+  return result._sum.quantity ?? 0;
 }
 
 async function maybeAutoVerifySeller(prismaClient, sellerId) {
@@ -51,7 +49,7 @@ async function verifySellersForDeliveredOrder(prismaClient, orderId) {
     },
   });
 
-  if (!order || order.status !== 'delivered') return;
+  if (!order || !['delivered', 'completed'].includes(order.status)) return;
 
   const sellerIds = [...new Set(order.items.map((item) => item.product.sellerId))];
   await Promise.all(sellerIds.map((sellerId) => maybeAutoVerifySeller(prismaClient, sellerId)));

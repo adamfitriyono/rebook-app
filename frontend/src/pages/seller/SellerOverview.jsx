@@ -9,6 +9,7 @@ import {
   Clock,
   PlusCircle,
   ChevronRight,
+  Users,
 } from 'lucide-react';
 import Loading from '../../components/common/Loading';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -21,6 +22,7 @@ import { getOrderProductTitle } from '../../utils/orderHelpers';
 const KPI_CARDS = [
   { key: 'activeListings', label: 'Listing Aktif', icon: PackageCheck, format: 'number' },
   { key: 'pendingOrders', label: 'Pesanan Perlu Diproses', icon: Clock, format: 'number' },
+  { key: 'followerCount', label: 'Pengikut', icon: Users, format: 'number' },
   { key: 'totalViews', label: 'Total Views', icon: Eye, format: 'number' },
   { key: 'monthlyRevenue', label: 'Pendapatan Bulan Ini', icon: Wallet, format: 'currency' },
   { key: 'totalSold', label: 'Total Terjual', icon: ShoppingBag, format: 'number' },

@@ -154,6 +154,11 @@ exports.createProduct = async (req, res, next) => {
       ? await uploadImages(req.files, 'products')
       : [DEFAULT_PRODUCT_IMAGE];
 
+    const parsedStock = parseInt(stock, 10);
+    if (Number.isNaN(parsedStock) || parsedStock < 0) {
+      return res.status(400).json({ success: false, error: 'Stok harus angka 0 atau lebih' });
+    }
+
     const product = await prisma.product.create({
       data: {
         title,
@@ -163,7 +168,8 @@ exports.createProduct = async (req, res, next) => {
         condition,
         price: parseFloat(price),
         category,
-        stock: parseInt(stock, 10) || 1,
+        stock: parsedStock,
+        available: parsedStock > 0,
         discountPercent: parsedDiscount,
         ...shipping.data,
         sellerId: req.user.id,
@@ -208,6 +214,9 @@ exports.updateProduct = async (req, res, next) => {
       }
       updateData.category = category;
     }
+    if (available !== undefined) {
+      updateData.available = available === 'true' || available === true;
+    }
     if (stock !== undefined && stock !== '') {
       const parsedStock = parseInt(stock, 10);
       if (Number.isNaN(parsedStock) || parsedStock < 0) {
@@ -216,11 +225,10 @@ exports.updateProduct = async (req, res, next) => {
       updateData.stock = parsedStock;
       if (parsedStock === 0) {
         updateData.available = false;
-      } else if (product.stock === 0) {
+      } else if (product.stock === 0 && updateData.available !== false) {
         updateData.available = true;
       }
     }
-    if (available !== undefined) updateData.available = available === 'true' || available === true;
     if (discountPercent !== undefined) {
       const parsedDiscount = parseDiscountPercent(discountPercent);
       if (parsedDiscount === undefined) {

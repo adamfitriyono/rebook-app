@@ -29,17 +29,14 @@ export default function OrderHistory() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [actionId, setActionId] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [payTarget, setPayTarget] = useState(null);
 
   const fetchOrders = () => {
     setLoading(true);
     const params = statusFilter === 'all' ? {} : { status: statusFilter };
     getOrders(params)
       .then(({ data }) => {
-        let result = data.data;
-        if (statusFilter === 'delivered') {
-          result = result.filter((o) => o.status === 'delivered' || o.status === 'completed');
-        }
-        setOrders(result);
+        setOrders(data.data);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -49,7 +46,19 @@ export default function OrderHistory() {
     fetchOrders();
   }, [statusFilter]);
 
-  const handlePay = async (order) => {
+  const getGroupUnpaidOrders = (order) => {
+    if (!order.checkoutGroupId) return [];
+    return orders.filter(
+      (o) =>
+        o.checkoutGroupId === order.checkoutGroupId &&
+        o.paymentStatus !== 'paid' &&
+        o.status !== 'cancelled' &&
+        o.id !== order.id,
+    );
+  };
+
+  const handlePayConfirmed = async (order) => {
+    setPayTarget(null);
     try {
       setActionId(order.id);
       if (order.checkoutGroupId) {
@@ -57,14 +66,20 @@ export default function OrderHistory() {
           checkoutGroupId: order.checkoutGroupId,
           paymentMethod: 'qris',
         });
+        const otherCount = getGroupUnpaidOrders(order).length;
+        toast.success(
+          otherCount > 0
+            ? `Pembayaran berhasil! ${otherCount + 1} pesanan telah dibayar.`
+            : 'Pembayaran berhasil!',
+        );
       } else {
         await processPayment({
           orderId: order.id,
           amount: order.totalPrice,
           paymentMethod: 'qris',
         });
+        toast.success('Pembayaran berhasil!');
       }
-      toast.success('Pembayaran berhasil!');
       await fetchCart();
       fetchOrders();
     } catch (err) {
@@ -74,11 +89,20 @@ export default function OrderHistory() {
     }
   };
 
+  const handlePay = (order) => {
+    const otherUnpaid = getGroupUnpaidOrders(order);
+    if (otherUnpaid.length > 0) {
+      setPayTarget(order);
+    } else {
+      handlePayConfirmed(order);
+    }
+  };
+
   const handleCancel = async () => {
     if (!cancelTarget) return;
     try {
-      setActionId(cancelTarget.id);
-      await cancelOrder(cancelTarget.id);
+      setActionId(cancelTarget);
+      await cancelOrder(cancelTarget);
       toast.success('Pesanan dibatalkan');
       setCancelTarget(null);
       fetchOrders();
@@ -106,8 +130,18 @@ export default function OrderHistory() {
     }
   };
 
+  const payTargetOtherCount = payTarget ? getGroupUnpaidOrders(payTarget).length : 0;
+
   return (
     <div className="max-w-content mx-auto px-4 py-8">
+      <ConfirmModal
+        open={!!payTarget}
+        title="Konfirmasi Pembayaran"
+        message={`Pesanan ini bagian dari checkout multi-penjual. Membayar akan menyelesaikan ${payTargetOtherCount + 1} pesanan sekaligus. Lanjutkan?`}
+        confirmLabel="Bayar Sekarang"
+        onConfirm={() => handlePayConfirmed(payTarget)}
+        onCancel={() => setPayTarget(null)}
+      />
       <ConfirmModal
         open={!!cancelTarget}
         title="Batalkan Pesanan"

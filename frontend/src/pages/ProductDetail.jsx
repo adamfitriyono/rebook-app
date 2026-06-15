@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Plus, Star, MessageCircle, Store } from 'lucide-react';
 import Loading from '../components/common/Loading';
+import ConfirmModal from '../components/common/ConfirmModal';
 import RatingStars from '../components/product/RatingStars';
 import { getProductById } from '../services/products';
 import { addToCart, clearCart } from '../services/cart';
@@ -26,11 +27,12 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { fetchCart } = useCartStore();
+  const { fetchCart, cart } = useCartStore();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [showBuyNowConfirm, setShowBuyNowConfirm] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -81,14 +83,10 @@ export default function ProductDetail() {
     }
   };
 
-  const handleBuyNow = async () => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    if (product.stock <= 0) return;
+  const executeBuyNow = async () => {
     try {
       setBuying(true);
+      setShowBuyNowConfirm(false);
       await clearCart();
       await addToCart({ productId: product.id, quantity: 1 });
       await fetchCart();
@@ -97,6 +95,20 @@ export default function ProductDetail() {
       toast.error(err.response?.data?.error || 'Gagal memproses pembelian');
     } finally {
       setBuying(false);
+    }
+  };
+
+  const handleBuyNow = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (product.stock <= 0 || product.available === false) return;
+    const hasCartItems = (cart?.items?.length ?? 0) > 0;
+    if (hasCartItems) {
+      setShowBuyNowConfirm(true);
+    } else {
+      executeBuyNow();
     }
   };
 
@@ -115,7 +127,7 @@ export default function ProductDetail() {
     }
   };
 
-  const outOfStock = product?.stock <= 0;
+  const outOfStock = product?.stock <= 0 || product?.available === false;
   const actionDisabled = adding || buying || outOfStock;
 
   const handleSubmitReview = async (e) => {
@@ -183,6 +195,14 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
+      <ConfirmModal
+        open={showBuyNowConfirm}
+        title="Beli Langsung"
+        message="Keranjang Anda saat ini akan dikosongkan dan diganti dengan produk ini. Lanjutkan?"
+        confirmLabel="Lanjutkan"
+        onConfirm={executeBuyNow}
+        onCancel={() => setShowBuyNowConfirm(false)}
+      />
       <Breadcrumb items={productTrail(product)} />
       <div className="grid md:grid-cols-2 gap-8 items-start surface-card p-6">
         <ProductImageGallery

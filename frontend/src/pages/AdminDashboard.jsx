@@ -315,7 +315,7 @@ export default function AdminDashboard() {
                 ['GMV', formatPrice(analytics.gmv)],
                 ['Pengguna Baru (30h)', analytics.newUsers30d],
                 ['Retensi Pembeli (30h)', `${analytics.retentionRate30d}%`],
-                ['Dispute Terbuka', analytics.openDisputes],
+                ['Pengaduan Terbuka', analytics.openDisputes],
                 ['Laporan Pending', analytics.pendingReports],
                 ['Pesanan 7 Hari', analytics.ordersLast7d],
               ].map(([label, value]) => (

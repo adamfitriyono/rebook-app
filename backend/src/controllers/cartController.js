@@ -89,31 +89,49 @@ exports.addToCart = async (req, res, next) => {
     const { productId, quantity = 1 } = req.body;
     const qty = parseInt(quantity, 10);
 
+    if (Number.isNaN(qty) || qty <= 0) {
+      return res.status(400).json({ success: false, error: 'Jumlah harus minimal 1' });
+    }
+
+    if (!productId || typeof productId !== 'number') {
+      return res.status(400).json({ success: false, error: 'productId tidak valid' });
+    }
+
     const product = await prisma.product.findUnique({ where: { id: productId } });
+
+    if (product && product.sellerId === req.user.id) {
+      return res.status(400).json({ success: false, error: 'Tidak bisa membeli produk milik sendiri' });
+    }
     if (!product || !product.available || product.stock < qty) {
       return res.status(400).json({ success: false, error: 'Product not available or insufficient stock' });
     }
 
     const cart = await getOrCreateCart(req.user.id);
 
-    const existing = cart.items.find((i) => i.productId === productId);
-    if (existing) {
-      const newQty = existing.quantity + qty;
-      if (newQty > product.stock) {
-        return res.status(400).json({ success: false, error: 'Product not available or insufficient stock' });
-      }
-      await prisma.cartItem.update({
-        where: { id: existing.id },
-        data: { quantity: newQty },
+    const added = await prisma.$transaction(async (tx) => {
+      const existing = await tx.cartItem.findFirst({
+        where: { cartId: cart.id, productId },
       });
-    } else {
-      await prisma.cartItem.create({
-        data: { cartId: cart.id, productId, quantity: qty },
-      });
-    }
 
-    const updated = await getOrCreateCart(req.user.id);
-    const added = updated.items.find((i) => i.productId === productId);
+      if (existing) {
+        const newQty = existing.quantity + qty;
+        if (newQty > product.stock) {
+          const err = new Error('Product not available or insufficient stock');
+          err.status = 400;
+          throw err;
+        }
+        return tx.cartItem.update({
+          where: { id: existing.id },
+          data: { quantity: newQty },
+          include: { product: { select: cartProductSelect } },
+        });
+      }
+
+      return tx.cartItem.create({
+        data: { cartId: cart.id, productId, quantity: qty },
+        include: { product: { select: cartProductSelect } },
+      });
+    });
 
     res.status(201).json({
       success: true,
@@ -129,6 +147,9 @@ exports.addToCart = async (req, res, next) => {
       },
     });
   } catch (err) {
+    if (err.status === 400) {
+      return res.status(400).json({ success: false, error: err.message });
+    }
     next(err);
   }
 };
@@ -153,6 +174,10 @@ exports.updateCartItem = async (req, res, next) => {
       if (qty <= 0) {
         await prisma.cartItem.delete({ where: { id: itemId } });
         return res.json({ success: true, message: 'Item removed from cart' });
+      }
+
+      if (!item.product.available) {
+        return res.status(400).json({ success: false, error: 'Produk tidak tersedia' });
       }
 
       if (qty > item.product.stock) {

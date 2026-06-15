@@ -51,6 +51,7 @@ export const useAuthStore = create((set) => ({
     set({ user: null, impersonating: false });
     useLikeStore.getState().clear();
     useSellerFollowStore.getState().clear();
+    useCartStore.getState().setCart(null);
   },
 
   setUser: (user) => set({ user }),
@@ -61,6 +62,11 @@ export const useAuthStore = create((set) => ({
     sessionStorage.setItem('adminToken', adminToken);
     localStorage.setItem('token', data.token);
     set({ user: data.user, impersonating: true });
+    useLikeStore.getState().clear();
+    useSellerFollowStore.getState().clear();
+    useCartStore.getState().fetchCart();
+    useLikeStore.getState().fetchIds();
+    useSellerFollowStore.getState().fetchIds();
     return data;
   },
 
@@ -71,6 +77,12 @@ export const useAuthStore = create((set) => ({
     sessionStorage.removeItem('adminToken');
     const { data } = await getProfile();
     set({ user: data.user, impersonating: false });
+    useLikeStore.getState().clear();
+    useSellerFollowStore.getState().clear();
+    useCartStore.getState().setCart(null);
+    useCartStore.getState().fetchCart();
+    useLikeStore.getState().fetchIds();
+    useSellerFollowStore.getState().fetchIds();
   },
 }));
 

@@ -123,19 +123,35 @@ export default function Checkout() {
 
     try {
       setLoading(true);
-      const cartItemIds = cart.selectedItems.map((item) => item.id);
-      const { data: orderData } = await createOrder({ ...shipping, cartItemIds });
-      const { checkoutGroupId, grandTotal } = orderData.data;
 
-      await processCheckoutPayment({ checkoutGroupId, paymentMethod });
+      const cartItemIds = cart.selectedItems.map((item) => item.id);
+
+      let checkoutGroupId;
+      let grandTotal;
+      try {
+        const { data: orderData } = await createOrder({ ...shipping, cartItemIds });
+        checkoutGroupId = orderData.data.checkoutGroupId;
+        grandTotal = orderData.data.grandTotal;
+      } catch (orderErr) {
+        toast.error(orderErr.response?.data?.error || 'Gagal membuat pesanan');
+        return;
+      }
+
+      try {
+        await processCheckoutPayment({ checkoutGroupId, paymentMethod });
+      } catch (payErr) {
+        toast.error(
+          `Pembayaran gagal: ${payErr.response?.data?.error || 'Terjadi kesalahan'}. Pesanan telah dibuat — bayar dari Riwayat Pesanan.`,
+        );
+        navigate('/orders');
+        return;
+      }
 
       await fetchCart();
       toast.success('Pembayaran berhasil!');
       navigate(`/order-confirmation/group/${checkoutGroupId}`, {
         state: { grandTotal },
       });
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Checkout gagal');
     } finally {
       setLoading(false);
     }
