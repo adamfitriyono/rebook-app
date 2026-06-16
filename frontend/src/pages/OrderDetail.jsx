@@ -5,6 +5,7 @@ import Loading from '../components/common/Loading';
 import Breadcrumb from '../components/common/Breadcrumb';
 import { ordersTrail } from '../utils/breadcrumbs';
 import ConfirmModal from '../components/common/ConfirmModal';
+import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import InvoicePrintable from '../components/order/InvoicePrintable';
 import { getOrderById, confirmOrder, cancelOrder } from '../services/orders';
@@ -21,7 +22,7 @@ import {
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
 import { formatPaymentMethod } from '../utils/paymentMethods';
-import { createDispute } from '../services/disputes';
+import { createDispute, getMyDisputes } from '../services/disputes';
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -32,9 +33,12 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [retryPayMethod, setRetryPayMethod] = useState('qris');
   const [disputeSubject, setDisputeSubject] = useState('');
   const [disputeDescription, setDisputeDescription] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
+  const [hasExistingDispute, setHasExistingDispute] = useState(false);
 
   const loadOrder = useCallback(() => {
     setLoading(true);
@@ -51,24 +55,39 @@ export default function OrderDetail() {
   }, [loadOrder]);
 
   useEffect(() => {
+    if (!id) return;
+    getMyDisputes()
+      .then(({ data }) => {
+        const found = (data.data || []).some((d) => d.orderId === parseInt(id, 10));
+        setHasExistingDispute(found);
+      })
+      .catch(() => {});
+  }, [id]);
+
+  useEffect(() => {
     if (order && location.state?.printInvoice && order.paymentStatus === 'paid') {
       window.setTimeout(() => window.print(), 500);
     }
   }, [order, location.state]);
 
-  const handlePay = async () => {
+  const handlePayConfirmed = async () => {
+    if (!retryPayMethod) {
+      toast.error('Pilih metode pembayaran terlebih dahulu');
+      return;
+    }
+    setShowPayModal(false);
     try {
       setActionLoading(true);
       if (order.checkoutGroupId) {
         await processCheckoutPayment({
           checkoutGroupId: order.checkoutGroupId,
-          paymentMethod: 'qris',
+          paymentMethod: retryPayMethod,
         });
       } else {
         await processPayment({
           orderId: order.id,
           amount: order.totalPrice,
-          paymentMethod: 'qris',
+          paymentMethod: retryPayMethod,
         });
       }
       toast.success('Pembayaran berhasil!');
@@ -79,6 +98,11 @@ export default function OrderDetail() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handlePay = () => {
+    setRetryPayMethod('qris');
+    setShowPayModal(true);
   };
 
   const handleCancel = async () => {
@@ -121,6 +145,7 @@ export default function OrderDetail() {
       toast.success('Pengaduan diajukan. Tim support akan meninjau.');
       setDisputeSubject('');
       setDisputeDescription('');
+      setHasExistingDispute(true);
       navigate('/pengaduan');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Gagal mengajukan dispute');
@@ -141,6 +166,19 @@ export default function OrderDetail() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
+      <ConfirmModal
+        open={showPayModal}
+        title="Pilih Metode Pembayaran"
+        message={
+          <PaymentMethodSelector
+            value={retryPayMethod}
+            onChange={setRetryPayMethod}
+          />
+        }
+        confirmLabel="Bayar Sekarang"
+        onConfirm={handlePayConfirmed}
+        onCancel={() => setShowPayModal(false)}
+      />
       <ConfirmModal
         open={showCancelModal}
         title="Batalkan Pesanan"
@@ -256,29 +294,38 @@ export default function OrderDetail() {
       {['paid', 'shipped', 'delivered', 'completed'].includes(order.status) && (
         <div className="surface-card p-6 mb-6">
           <h2 className="font-semibold mb-3">Ajukan Pengaduan</h2>
-          <p className="text-sm text-subtle mb-4">
-            Ada masalah dengan pesanan ini? Ajukan pengaduan dan tim admin akan meninjau.
-          </p>
-          <form onSubmit={handleSubmitDispute} className="space-y-3 max-w-lg">
-            <input
-              type="text"
-              value={disputeSubject}
-              onChange={(e) => setDisputeSubject(e.target.value)}
-              placeholder="Subjek (mis. Buku tidak sesuai)"
-              className="input-field"
-              required
-            />
-            <textarea
-              value={disputeDescription}
-              onChange={(e) => setDisputeDescription(e.target.value)}
-              placeholder="Jelaskan masalah secara detail..."
-              className="input-field min-h-[100px]"
-              required
-            />
-            <button type="submit" disabled={disputeLoading} className="btn-primary">
-              {disputeLoading ? 'Mengirim...' : 'Ajukan Pengaduan'}
-            </button>
-          </form>
+          {hasExistingDispute ? (
+            <p className="text-sm text-subtle">
+              Pengaduan untuk pesanan ini sudah diajukan.{' '}
+              <a href="/pengaduan" className="text-primary hover:underline">Lihat pengaduan saya</a>.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-subtle mb-4">
+                Ada masalah dengan pesanan ini? Ajukan pengaduan dan tim admin akan meninjau.
+              </p>
+              <form onSubmit={handleSubmitDispute} className="space-y-3 max-w-lg">
+                <input
+                  type="text"
+                  value={disputeSubject}
+                  onChange={(e) => setDisputeSubject(e.target.value)}
+                  placeholder="Subjek (mis. Buku tidak sesuai)"
+                  className="input-field"
+                  required
+                />
+                <textarea
+                  value={disputeDescription}
+                  onChange={(e) => setDisputeDescription(e.target.value)}
+                  placeholder="Jelaskan masalah secara detail..."
+                  className="input-field min-h-[100px]"
+                  required
+                />
+                <button type="submit" disabled={disputeLoading} className="btn-primary">
+                  {disputeLoading ? 'Mengirim...' : 'Ajukan Pengaduan'}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       )}
 

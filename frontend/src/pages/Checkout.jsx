@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Loading from '../components/common/Loading';
 import Breadcrumb from '../components/common/Breadcrumb';
 import { homeTrail, CRUMBS } from '../utils/breadcrumbs';
@@ -42,6 +42,9 @@ function resolveShippingPayload(selectedId, savedAddresses, newAddress) {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const buyNow = location.state?.buyNow ?? null;
+  const isBuyNow = Boolean(buyNow?.product);
   const fetchCart = useCartStore((s) => s.fetchCart);
   const [cart, setCart] = useState(null);
   const [loadingCart, setLoadingCart] = useState(true);
@@ -61,6 +64,23 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
+    if (isBuyNow) {
+      const quantity = buyNow.quantity || 1;
+      setCart({
+        selectedItems: [
+          {
+            id: `buy-now-${buyNow.product.id}`,
+            productId: buyNow.product.id,
+            quantity,
+            selected: true,
+            product: buyNow.product,
+          },
+        ],
+      });
+      setLoadingCart(false);
+      return;
+    }
+
     getCart()
       .then(({ data }) => {
         const selectedItems = data.data?.items?.filter((item) => item.selected) ?? [];
@@ -72,7 +92,7 @@ export default function Checkout() {
       })
       .catch(() => navigate('/cart'))
       .finally(() => setLoadingCart(false));
-  }, [navigate]);
+  }, [navigate, isBuyNow, buyNow]);
 
   useEffect(() => {
     getSavedAddresses()
@@ -124,12 +144,22 @@ export default function Checkout() {
     try {
       setLoading(true);
 
-      const cartItemIds = cart.selectedItems.map((item) => item.id);
-
       let checkoutGroupId;
       let grandTotal;
       try {
-        const { data: orderData } = await createOrder({ ...shipping, cartItemIds });
+        const orderPayload = isBuyNow
+          ? {
+              ...shipping,
+              buyNow: {
+                productId: buyNow.product.id,
+                quantity: buyNow.quantity || 1,
+              },
+            }
+          : {
+              ...shipping,
+              cartItemIds: cart.selectedItems.map((item) => item.id),
+            };
+        const { data: orderData } = await createOrder(orderPayload);
         checkoutGroupId = orderData.data.checkoutGroupId;
         grandTotal = orderData.data.grandTotal;
       } catch (orderErr) {
@@ -161,7 +191,7 @@ export default function Checkout() {
 
   return (
     <div className="max-w-content mx-auto px-4 py-8">
-      <Breadcrumb items={homeTrail(CRUMBS.books, CRUMBS.cart, CRUMBS.checkout)} />
+      <Breadcrumb items={isBuyNow ? homeTrail(CRUMBS.books, CRUMBS.checkout) : homeTrail(CRUMBS.books, CRUMBS.cart, CRUMBS.checkout)} />
       <h1 className="text-2xl font-bold text-heading mb-6">Checkout</h1>
 
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-3 gap-6">

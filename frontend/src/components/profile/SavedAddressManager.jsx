@@ -170,9 +170,8 @@ export default function SavedAddressManager() {
                       Jadikan Utama
                     </button>
                   )}
-                  <button type="button" onClick={() => startEdit(addr)} className="btn-ghost btn-sm">
+                  <button type="button" onClick={() => startEdit(addr)} className="btn-ghost btn-sm" aria-label="Edit alamat">
                     <Pencil size={14} />
-                    Edit
                   </button>
                   <button
                     type="button"

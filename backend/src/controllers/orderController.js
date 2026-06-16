@@ -251,30 +251,51 @@ exports.getOrderById = async (req, res, next) => {
 
 exports.createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, shippingCity, shippingProvince, cartItemIds } = req.body;
+    const { shippingAddress, shippingCity, shippingProvince, cartItemIds, buyNow } = req.body;
 
     if (!shippingAddress || !shippingCity || !shippingProvince) {
       return res.status(400).json({ success: false, error: 'Shipping information is required' });
     }
 
-    const cart = await prisma.cart.findUnique({
-      where: { userId: req.user.id },
-      include: { items: { include: { product: true } } },
-    });
+    let itemsToOrder;
 
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({ success: false, error: 'Cart is empty' });
-    }
+    if (buyNow?.productId) {
+      const productId = parseInt(buyNow.productId, 10);
+      const quantity = parseInt(buyNow.quantity, 10) || 1;
 
-    let itemsToOrder = cart.items.filter((item) => item.selected);
+      if (Number.isNaN(productId) || productId <= 0) {
+        return res.status(400).json({ success: false, error: 'productId tidak valid' });
+      }
+      if (Number.isNaN(quantity) || quantity <= 0) {
+        return res.status(400).json({ success: false, error: 'Jumlah harus minimal 1' });
+      }
 
-    if (Array.isArray(cartItemIds) && cartItemIds.length > 0) {
-      const ids = new Set(cartItemIds.map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id)));
-      itemsToOrder = cart.items.filter((item) => ids.has(item.id) && item.selected);
-    }
+      const product = await prisma.product.findUnique({ where: { id: productId } });
+      if (!product) {
+        return res.status(404).json({ success: false, error: 'Produk tidak ditemukan' });
+      }
 
-    if (itemsToOrder.length === 0) {
-      return res.status(400).json({ success: false, error: 'Pilih minimal satu produk untuk checkout' });
+      itemsToOrder = [{ productId, quantity, product }];
+    } else {
+      const cart = await prisma.cart.findUnique({
+        where: { userId: req.user.id },
+        include: { items: { include: { product: true } } },
+      });
+
+      if (!cart || cart.items.length === 0) {
+        return res.status(400).json({ success: false, error: 'Cart is empty' });
+      }
+
+      itemsToOrder = cart.items.filter((item) => item.selected);
+
+      if (Array.isArray(cartItemIds) && cartItemIds.length > 0) {
+        const ids = new Set(cartItemIds.map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id)));
+        itemsToOrder = cart.items.filter((item) => ids.has(item.id) && item.selected);
+      }
+
+      if (itemsToOrder.length === 0) {
+        return res.status(400).json({ success: false, error: 'Pilih minimal satu produk untuk checkout' });
+      }
     }
 
     for (const item of itemsToOrder) {

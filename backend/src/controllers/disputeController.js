@@ -45,6 +45,14 @@ exports.createDispute = async (req, res, next) => {
       });
     }
 
+    const existingDispute = await prisma.dispute.findFirst({ where: { orderId: oid } });
+    if (existingDispute) {
+      return res.status(409).json({
+        success: false,
+        error: 'Pengaduan untuk pesanan ini sudah ada',
+      });
+    }
+
     const dispute = await prisma.dispute.create({
       data: {
         orderId: oid,

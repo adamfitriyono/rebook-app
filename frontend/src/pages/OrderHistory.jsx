@@ -6,6 +6,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import EmptyState from '../components/common/EmptyState';
 import StatusBadge from '../components/common/StatusBadge';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
+import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import { getOrders, confirmOrder, cancelOrder } from '../services/orders';
 import { processPayment, processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
@@ -30,6 +31,7 @@ export default function OrderHistory() {
   const [actionId, setActionId] = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null);
   const [payTarget, setPayTarget] = useState(null);
+  const [retryPayMethod, setRetryPayMethod] = useState('qris');
 
   const fetchOrders = () => {
     setLoading(true);
@@ -58,13 +60,17 @@ export default function OrderHistory() {
   };
 
   const handlePayConfirmed = async (order) => {
+    if (!retryPayMethod) {
+      toast.error('Pilih metode pembayaran terlebih dahulu');
+      return;
+    }
     setPayTarget(null);
     try {
       setActionId(order.id);
       if (order.checkoutGroupId) {
         await processCheckoutPayment({
           checkoutGroupId: order.checkoutGroupId,
-          paymentMethod: 'qris',
+          paymentMethod: retryPayMethod,
         });
         const otherCount = getGroupUnpaidOrders(order).length;
         toast.success(
@@ -76,7 +82,7 @@ export default function OrderHistory() {
         await processPayment({
           orderId: order.id,
           amount: order.totalPrice,
-          paymentMethod: 'qris',
+          paymentMethod: retryPayMethod,
         });
         toast.success('Pembayaran berhasil!');
       }
@@ -90,12 +96,8 @@ export default function OrderHistory() {
   };
 
   const handlePay = (order) => {
-    const otherUnpaid = getGroupUnpaidOrders(order);
-    if (otherUnpaid.length > 0) {
-      setPayTarget(order);
-    } else {
-      handlePayConfirmed(order);
-    }
+    setRetryPayMethod('qris');
+    setPayTarget(order);
   };
 
   const handleCancel = async () => {
@@ -136,8 +138,20 @@ export default function OrderHistory() {
     <div className="max-w-content mx-auto px-4 py-8">
       <ConfirmModal
         open={!!payTarget}
-        title="Konfirmasi Pembayaran"
-        message={`Pesanan ini bagian dari checkout multi-penjual. Membayar akan menyelesaikan ${payTargetOtherCount + 1} pesanan sekaligus. Lanjutkan?`}
+        title="Pilih Metode Pembayaran"
+        message={
+          <div className="space-y-4">
+            {payTargetOtherCount > 0 && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">
+                Pesanan ini bagian dari checkout multi-penjual. Membayar akan menyelesaikan {payTargetOtherCount + 1} pesanan sekaligus.
+              </p>
+            )}
+            <PaymentMethodSelector
+              value={retryPayMethod}
+              onChange={setRetryPayMethod}
+            />
+          </div>
+        }
         confirmLabel="Bayar Sekarang"
         onConfirm={() => handlePayConfirmed(payTarget)}
         onCancel={() => setPayTarget(null)}

@@ -11,7 +11,7 @@ export function canCancelOrder(order) {
 }
 
 export function canConfirmReceived(order) {
-  return order?.status === 'shipped';
+  return order?.status === 'shipped' && order?.paymentStatus === 'paid';
 }
 
 export function canPayOrder(order) {
