@@ -5,7 +5,8 @@ import Loading from '../../components/common/Loading';
 import StatusBadge from '../../components/common/StatusBadge';
 import OrderStatusTracker from '../../components/order/OrderStatusTracker';
 import PackingSlipPrintable from '../../components/order/PackingSlipPrintable';
-import { getOrderById } from '../../services/orders';
+import { getOrderById, respondCancellation } from '../../services/orders';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { toast } from '../../store/useToastStore';
 import { formatPrice, formatDate } from '../../utils/formatters';
 import { resolveMediaUrl } from '../../utils/media';
@@ -20,6 +21,8 @@ export default function SellerOrderDetail() {
   const [disputeSubject, setDisputeSubject] = useState('');
   const [disputeDescription, setDisputeDescription] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
+  const [cancelAction, setCancelAction] = useState(null);
+  const [cancelRespondLoading, setCancelRespondLoading] = useState(false);
 
   const loadOrder = useCallback(() => {
     setLoading(true);
@@ -34,6 +37,21 @@ export default function SellerOrderDetail() {
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
+
+  const handleRespondCancelRequest = async () => {
+    if (!cancelAction) return;
+    try {
+      setCancelRespondLoading(true);
+      await respondCancellation(order.id, { action: cancelAction });
+      toast.success(cancelAction === 'approve' ? 'Pembatalan disetujui' : 'Pembatalan ditolak');
+      setCancelAction(null);
+      loadOrder();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal memproses permintaan');
+    } finally {
+      setCancelRespondLoading(false);
+    }
+  };
 
   const handleSubmitDispute = async (e) => {
     e.preventDefault();
@@ -165,6 +183,58 @@ export default function SellerOrderDetail() {
           <PackingSlipPrintable order={packingOrder} />
         </div>
       )}
+
+      {order.cancellationRequest && (
+        <div className={`surface-card p-5 mb-6 border-l-4 ${
+          order.cancellationRequest.status === 'pending' ? 'border-amber-400' :
+          order.cancellationRequest.status === 'approved' ? 'border-red-500' : 'border-gray-400'
+        }`}>
+          <h3 className="font-semibold mb-2">Permintaan Pembatalan dari Pembeli</h3>
+          <p className="text-sm text-muted mb-3">
+            <span className="font-medium">Alasan:</span> {order.cancellationRequest.reason}
+          </p>
+          <p className="text-xs text-subtle mb-4">{formatDate(order.cancellationRequest.createdAt)}</p>
+          {order.cancellationRequest.status === 'pending' ? (
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCancelAction('approve')}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600"
+              >
+                Setujui Pembatalan
+              </button>
+              <button
+                type="button"
+                onClick={() => setCancelAction('reject')}
+                className="border border-gray-400 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
+              >
+                Tolak
+              </button>
+            </div>
+          ) : (
+            <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full ${
+              order.cancellationRequest.status === 'approved'
+                ? 'bg-red-100 text-red-700'
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {order.cancellationRequest.status === 'approved' ? 'Pembatalan disetujui' : 'Pembatalan ditolak'}
+            </span>
+          )}
+        </div>
+      )}
+
+      <ConfirmModal
+        open={!!cancelAction}
+        title={cancelAction === 'approve' ? 'Setujui Pembatalan?' : 'Tolak Pembatalan?'}
+        message={
+          cancelAction === 'approve'
+            ? 'Pesanan akan dibatalkan dan stok produk akan dikembalikan.'
+            : 'Permintaan pembatalan pembeli akan ditolak dan pesanan tetap berjalan.'
+        }
+        confirmLabel={cancelRespondLoading ? 'Memproses...' : (cancelAction === 'approve' ? 'Setujui' : 'Tolak')}
+        onConfirm={handleRespondCancelRequest}
+        onCancel={() => setCancelAction(null)}
+      />
 
       {['paid', 'shipped', 'delivered', 'completed'].includes(order.status) && (
         <div className="surface-card p-6 mb-6">

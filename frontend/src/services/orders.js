@@ -8,3 +8,5 @@ export const confirmOrder = (id) => API.put(`/orders/${id}/confirm`);
 export const cancelOrder = (id) => API.put(`/orders/${id}/cancel`);
 export const getSellerOrders = () => API.get('/orders/seller');
 export const updateOrderStatus = (id, data) => API.put(`/orders/${id}/status`, data);
+export const requestCancellation = (id, data) => API.post(`/orders/${id}/cancel-request`, data);
+export const respondCancellation = (id, data) => API.put(`/orders/${id}/cancel-request`, data);

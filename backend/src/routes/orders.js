@@ -14,5 +14,7 @@ router.post('/', orderController.createOrder);
 router.put('/:id/status', authorize('seller'), orderController.updateOrderStatus);
 router.put('/:id/confirm', orderController.confirmOrder);
 router.put('/:id/cancel', orderController.cancelOrder);
+router.post('/:id/cancel-request', orderController.createCancelRequest);
+router.put('/:id/cancel-request', authorize('seller'), orderController.respondCancelRequest);
 
 module.exports = router;

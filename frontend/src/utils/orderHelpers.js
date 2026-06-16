@@ -22,6 +22,18 @@ export function canMarkShipped(order) {
   return order?.status === 'paid' && order?.paymentStatus === 'paid';
 }
 
+export function canRequestCancellation(order) {
+  return (
+    order?.status === 'paid'
+    && order?.paymentStatus === 'paid'
+    && !order?.cancellationRequest
+  );
+}
+
+export function hasPendingCancellation(order) {
+  return order?.cancellationRequest?.status === 'pending';
+}
+
 const STATUS_STEP_INDEX = {
   pending: 0,
   paid: 1,

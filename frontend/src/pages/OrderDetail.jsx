@@ -8,7 +8,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import PaymentMethodSelector from '../components/checkout/PaymentMethodSelector';
 import OrderStatusTracker from '../components/order/OrderStatusTracker';
 import InvoicePrintable from '../components/order/InvoicePrintable';
-import { getOrderById, confirmOrder, cancelOrder } from '../services/orders';
+import { getOrderById, confirmOrder, cancelOrder, requestCancellation } from '../services/orders';
 import { processPayment, processCheckoutPayment } from '../services/payments';
 import { toast } from '../store/useToastStore';
 import { useCartStore } from '../store/useAuthStore';
@@ -19,6 +19,7 @@ import {
   canCancelOrder,
   canConfirmReceived,
   canPayOrder,
+  canRequestCancellation,
 } from '../utils/orderHelpers';
 import { ORDER_STATUS_LABELS } from '../utils/constants';
 import { formatPaymentMethod } from '../utils/paymentMethods';
@@ -39,6 +40,9 @@ export default function OrderDetail() {
   const [disputeDescription, setDisputeDescription] = useState('');
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [hasExistingDispute, setHasExistingDispute] = useState(false);
+  const [showCancelRequestModal, setShowCancelRequestModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelRequestLoading, setCancelRequestLoading] = useState(false);
 
   const loadOrder = useCallback(() => {
     setLoading(true);
@@ -132,6 +136,25 @@ export default function OrderDetail() {
     }
   };
 
+  const handleSubmitCancelRequest = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Alasan pembatalan harus diisi');
+      return;
+    }
+    try {
+      setCancelRequestLoading(true);
+      await requestCancellation(order.id, { reason: cancelReason.trim() });
+      toast.success('Permintaan pembatalan dikirim ke penjual');
+      setShowCancelRequestModal(false);
+      setCancelReason('');
+      loadOrder();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Gagal mengajukan pembatalan');
+    } finally {
+      setCancelRequestLoading(false);
+    }
+  };
+
   const handleSubmitDispute = async (e) => {
     e.preventDefault();
     if (!disputeSubject.trim() || !disputeDescription.trim()) return;
@@ -178,6 +201,25 @@ export default function OrderDetail() {
         confirmLabel="Bayar Sekarang"
         onConfirm={handlePayConfirmed}
         onCancel={() => setShowPayModal(false)}
+      />
+      <ConfirmModal
+        open={showCancelRequestModal}
+        title="Ajukan Pembatalan"
+        message={
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Berikan alasan mengapa Anda ingin membatalkan pesanan ini. Penjual akan meninjau dan memutuskan.</p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Mis. Barang tidak dibutuhkan lagi, salah pesan, dll."
+              className="input-field min-h-[80px] w-full"
+              autoFocus
+            />
+          </div>
+        }
+        confirmLabel={cancelRequestLoading ? 'Mengirim...' : 'Kirim Permintaan'}
+        onConfirm={handleSubmitCancelRequest}
+        onCancel={() => { setShowCancelRequestModal(false); setCancelReason(''); }}
       />
       <ConfirmModal
         open={showCancelModal}
@@ -329,6 +371,31 @@ export default function OrderDetail() {
         </div>
       )}
 
+      {order.cancellationRequest && (
+        <div className={`surface-card p-5 mb-6 border-l-4 ${
+          order.cancellationRequest.status === 'pending' ? 'border-amber-400' :
+          order.cancellationRequest.status === 'approved' ? 'border-red-500' : 'border-gray-400'
+        }`}>
+          <h2 className="font-semibold mb-1">Permintaan Pembatalan</h2>
+          <p className="text-sm text-muted mb-2">Alasan: {order.cancellationRequest.reason}</p>
+          {order.cancellationRequest.status === 'pending' && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-400/10 dark:text-amber-400 px-2.5 py-1 rounded-full">
+              Menunggu persetujuan penjual
+            </span>
+          )}
+          {order.cancellationRequest.status === 'approved' && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-400/10 dark:text-red-400 px-2.5 py-1 rounded-full">
+              Pembatalan disetujui
+            </span>
+          )}
+          {order.cancellationRequest.status === 'rejected' && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-2.5 py-1 rounded-full">
+              Permintaan pembatalan ditolak penjual
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3">
         {canPayOrder(order) && (
           <button
@@ -348,6 +415,16 @@ export default function OrderDetail() {
             className="border border-red-500 text-red-500 px-6 py-2.5 rounded-lg hover:bg-red-50 disabled:opacity-50"
           >
             Batalkan Pesanan
+          </button>
+        )}
+        {canRequestCancellation(order) && (
+          <button
+            type="button"
+            onClick={() => setShowCancelRequestModal(true)}
+            disabled={actionLoading}
+            className="border border-amber-500 text-amber-600 px-6 py-2.5 rounded-lg hover:bg-amber-50 disabled:opacity-50"
+          >
+            Ajukan Pembatalan
           </button>
         )}
         {canConfirmReceived(order) && (

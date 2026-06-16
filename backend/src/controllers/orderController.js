@@ -188,6 +188,7 @@ exports.getOrderById = async (req, res, next) => {
         },
         transaction: true,
         buyer: { select: { id: true, fullName: true, phoneNumber: true } },
+        cancellationRequest: true,
       },
     });
 
@@ -239,6 +240,14 @@ exports.getOrderById = async (req, res, next) => {
               amount: Number(order.transaction.amount),
               paymentMethod: order.transaction.paymentMethod,
               status: order.transaction.status,
+            }
+          : null,
+        cancellationRequest: order.cancellationRequest
+          ? {
+              id: order.cancellationRequest.id,
+              reason: order.cancellationRequest.reason,
+              status: order.cancellationRequest.status,
+              createdAt: order.cancellationRequest.createdAt,
             }
           : null,
         createdAt: order.createdAt,
@@ -506,6 +515,134 @@ exports.cancelOrder = async (req, res, next) => {
       message: 'Order cancelled successfully',
       data: { id: updated.id, status: updated.status },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.createCancelRequest = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { reason } = req.body;
+
+    if (!reason?.trim()) {
+      return res.status(400).json({ success: false, error: 'Alasan pembatalan harus diisi' });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { cancellationRequest: true },
+    });
+
+    if (!order || order.buyerId !== req.user.id) {
+      return res.status(404).json({ success: false, error: 'Pesanan tidak ditemukan' });
+    }
+
+    if (order.status !== 'paid' || order.paymentStatus !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        error: 'Pembatalan hanya bisa diajukan untuk pesanan yang sudah dibayar dan belum dikirim',
+      });
+    }
+
+    if (order.cancellationRequest) {
+      return res.status(409).json({
+        success: false,
+        error: 'Permintaan pembatalan untuk pesanan ini sudah ada',
+      });
+    }
+
+    const request = await prisma.cancellationRequest.create({
+      data: {
+        orderId: id,
+        buyerId: req.user.id,
+        reason: reason.trim(),
+      },
+    });
+
+    res.status(201).json({ success: true, data: request });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.respondCancelRequest = async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { action } = req.body;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ success: false, error: 'action harus approve atau reject' });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: { include: { product: true } },
+        cancellationRequest: true,
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Pesanan tidak ditemukan' });
+    }
+
+    const isSeller = order.items.some((i) => i.product.sellerId === req.user.id);
+    if (!isSeller) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
+
+    if (!order.cancellationRequest) {
+      return res.status(404).json({ success: false, error: 'Permintaan pembatalan tidak ditemukan' });
+    }
+
+    if (order.cancellationRequest.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        error: 'Permintaan pembatalan sudah diproses sebelumnya',
+      });
+    }
+
+    if (action === 'approve') {
+      await prisma.$transaction(async (tx) => {
+        await tx.cancellationRequest.update({
+          where: { orderId: id },
+          data: { status: 'approved' },
+        });
+
+        await tx.order.update({
+          where: { id },
+          data: { status: 'cancelled' },
+        });
+
+        for (const item of order.items) {
+          const restored = await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: { increment: item.quantity },
+              sold: { decrement: item.quantity },
+            },
+            select: { stock: true },
+          });
+
+          if (restored.stock > 0 && !item.product.available) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { available: true },
+            });
+          }
+        }
+      });
+
+      return res.json({ success: true, message: 'Pembatalan disetujui' });
+    }
+
+    await prisma.cancellationRequest.update({
+      where: { orderId: id },
+      data: { status: 'rejected' },
+    });
+
+    res.json({ success: true, message: 'Pembatalan ditolak' });
   } catch (err) {
     next(err);
   }
