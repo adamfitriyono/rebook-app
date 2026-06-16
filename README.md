@@ -4,10 +4,12 @@ Marketplace buku bekas terkurasi — beli atau jual buku bekasmu dalam satu plat
 ## Fitur utama
 
 - **Katalog & pencarian** — filter kategori, kondisi, harga; detail produk dengan review
-- **Keranjang & checkout** — pembayaran dan pesanan (biaya layanan + ongkir pesanan)
-- **Wishlist**, chat pembeli–penjual, alamat otomatis (Nominatim)
+- **Keranjang, checkout & Beli Langsung** — pembayaran dan pesanan (biaya layanan + ongkir).
+- **Like**, chat pembeli–penjual, alamat otomatis (Nominatim)
 - **Seller Centre** — listing, pesanan, statistik penjual
-- **Badge penjual terverifikasi** — otomatis setelah 10 penjualan sukses, atau manual oleh admin
+- **Followers toko** — tampil di halaman toko dan dashboard penjual
+- **Pengaduan** — ajukan pengaduan untuk pesanan yang sudah dibayar dan diproses
+- **Badge penjual terverifikasi** — otomatis setelah 10 unit terjual sukses, atau manual oleh admin
 - **Admin Panel** — pengguna, produk, pesanan, banner, audit log, dll
 - **CS AI** — popup bantuan via Google Gemini
 
@@ -26,7 +28,7 @@ Marketplace buku bekas terkurasi — beli atau jual buku bekasmu dalam satu plat
 - Node.js 18+
 - PostgreSQL (lokal atau Railway)
 - Akun [Cloudinary](https://cloudinary.com) (upload gambar)
-- API key [Google AI Studio](https://aistudio.google.com) (opsional, untuk CS AI)
+- API key [Google AI Studio](https://aistudio.google.com) (untuk CS AI)
 
 ## Setup lokal
 
@@ -71,7 +73,7 @@ Password semua akun: **`Test123!`**
 - `JWT_SECRET`, `JWT_EXPIRY`
 - `FRONTEND_URL` — origin frontend (CORS)
 - `CLOUDINARY_*` — upload profil & foto produk
-- `GEMINI_API_KEY` — customer service AI
+- `GEMINI_API_KEY` — opsional (customer service AI)
 
 **Frontend** (`frontend/.env`) — production only:
 
@@ -82,7 +84,7 @@ Password semua akun: **`Test123!`**
 ```bash
 # Backend
 npm run dev          # development (nodemon)
-npm run deploy         # migrate + start (production)
+npm run deploy       # migrate + start (production)
 npm run db:seed        # data demo
 npm run db:studio      # Prisma Studio
 
@@ -106,10 +108,10 @@ rebook-app/
 
 ## Deployment
 
-1. **Railway** — deploy backend, set env variable, jalankan `npm run deploy`
+1. **Railway** — deploy backend + DB, set env, jalankan `npm run deploy`
 2. **Vercel** — deploy folder `frontend`, set `VITE_API_URL` ke URL Railway
 3. Pastikan `FRONTEND_URL` di backend mencantumkan domain Vercel
 
 ---
 
->Proyek hanya untuk pembelajaran / portfolio — ReBook marketplace buku bekas.
+> Proyek untuk pembelajaran / portfolio — ReBook marketplace buku bekas.
