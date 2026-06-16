@@ -43,9 +43,12 @@ function resolveShippingPayload(selectedId, savedAddresses, newAddress) {
 export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const buyNow = location.state?.buyNow ?? null;
-  const isBuyNow = Boolean(buyNow?.product);
   const fetchCart = useCartStore((s) => s.fetchCart);
+
+  // Snapshot buyNow state at mount so it stays stable throughout the component's lifecycle.
+  const [buyNowState] = useState(() => location.state?.buyNow ?? null);
+  const isBuyNow = Boolean(buyNowState?.product?.id);
+
   const [cart, setCart] = useState(null);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -59,21 +62,21 @@ export default function Checkout() {
 
   useEffect(() => {
     getPublicFees()
-      .then(({ data }) => setFees(data.data))
+      .then(({ data }) => setFees(data.data ?? DEFAULT_FEES))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (isBuyNow) {
-      const quantity = buyNow.quantity || 1;
+      const quantity = buyNowState.quantity || 1;
       setCart({
         selectedItems: [
           {
-            id: `buy-now-${buyNow.product.id}`,
-            productId: buyNow.product.id,
+            id: `buy-now-${buyNowState.product.id}`,
+            productId: buyNowState.product.id,
             quantity,
             selected: true,
-            product: buyNow.product,
+            product: buyNowState.product,
           },
         ],
       });
@@ -92,7 +95,7 @@ export default function Checkout() {
       })
       .catch(() => navigate('/cart'))
       .finally(() => setLoadingCart(false));
-  }, [navigate, isBuyNow, buyNow]);
+  }, [navigate, isBuyNow, buyNowState]);
 
   useEffect(() => {
     getSavedAddresses()
@@ -151,8 +154,8 @@ export default function Checkout() {
           ? {
               ...shipping,
               buyNow: {
-                productId: buyNow.product.id,
-                quantity: buyNow.quantity || 1,
+                productId: buyNowState.product.id,
+                quantity: buyNowState.quantity || 1,
               },
             }
           : {
